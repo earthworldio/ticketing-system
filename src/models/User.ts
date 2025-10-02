@@ -1,15 +1,8 @@
-/**
- * User Model
- * Database operations for user table
- */
-
 import { query } from '@/lib/db';
 import { User, CreateUserDTO, UpdateUserDTO } from '@/types';
 
 export class UserModel {
-  /**
-   * Find user by ID
-   */
+  /* Find user by ID */
   static async findById(id: string): Promise<User | null> {
     const result = await query(
       'SELECT * FROM "user" WHERE id = $1',
@@ -19,9 +12,7 @@ export class UserModel {
     return result.rows[0] || null;
   }
 
-  /**
-   * Find user by email
-   */
+  /* Find user by email */
   static async findByEmail(email: string): Promise<User | null> {
     const result = await query(
       'SELECT * FROM "user" WHERE email = $1',
@@ -31,9 +22,7 @@ export class UserModel {
     return result.rows[0] || null;
   }
 
-  /**
-   * Find all users
-   */
+  /* Find all users */
   static async findAll(): Promise<User[]> {
     const result = await query(
       'SELECT * FROM "user" ORDER BY created_date DESC'
@@ -41,9 +30,7 @@ export class UserModel {
     return result.rows;
   }
 
-  /**
-   * Find users by role
-   */
+  /* Find users by role */
   static async findByRole(roleId: string): Promise<User[]> {
     const result = await query(
       'SELECT * FROM "user" WHERE role_id = $1 ORDER BY created_date DESC',
@@ -52,9 +39,7 @@ export class UserModel {
     return result.rows;
   }
 
-  /**
-   * Create a new user
-   */
+  /* Create a new user */
   static async create(data: CreateUserDTO): Promise<User> {
     const result = await query(
       `INSERT INTO "user" (
@@ -76,9 +61,7 @@ export class UserModel {
     return result.rows[0];
   }
 
-  /**
-   * Update user
-   */
+  /* Update user */
   static async update(id: string, data: UpdateUserDTO): Promise<User | null> {
     const fields: string[] = [];
     const values: any[] = [];
@@ -144,17 +127,13 @@ export class UserModel {
     return result.rows[0] || null;
   }
 
-  /**
-   * Delete user
-   */
+  /* Delete user */
   static async delete(id: string): Promise<boolean> {
     const result = await query('DELETE FROM "user" WHERE id = $1', [id]);
     return (result.rowCount || 0) > 0;
   }
 
-  /**
-   * Count users
-   */
+  /* Count users */
   static async count(): Promise<number> {
     const result = await query('SELECT COUNT(*) as count FROM "user"');
     return parseInt(result.rows[0].count);
