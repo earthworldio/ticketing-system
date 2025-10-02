@@ -44,76 +44,75 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
-        {/* Logo */}
-        <div className="flex justify-center">
+      <div className="w-full max-w-md p-8">
+
+        <div className='absolute top-10 left-1/2 -translate-x-1/2' >
+          <h2 className='text-xl md:text-xl font-sm text-gray-800'>Ticketing System by Fourpoint Zero</h2>
         </div>
 
-        {/* Title */}
-        <div className="text-center">
-          <h4 className="text-3xl font-semibold text-gray-900">
-            4.0 Ticketing System
-          </h4>
+        {/* Welcome Message */}
+        <div className="text-center mb-8">
+          <h2 className="text-xl md:text-2xl font-medium text-gray-800">Welcome back!</h2>
+          <p className="text-gray-500 text-sm mt-2">
+            Log in to continue manage your tickets.
+          </p>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4">
             {error}
           </div>
         )}
 
         {/* Login Form */}
-        <form onSubmit={handleLogin} className="mt-8 space-y-6">
-          <div className="space-y-4">
-            {/* Email Input */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Password Input */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          {/* Login Button */}
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ backgroundColor: '#6366F1', outlineColor: '#6366F1' }}
-              onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = '#5558E3')}
-              onMouseLeave={(e) => !loading && (e.currentTarget.style.backgroundColor = '#6366F1')}
+        <form onSubmit={handleLogin} className="space-y-4 w-full">
+          <div className="w-full">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 mb-2"
             >
-              {loading ? 'Logging in...' : 'Log in'}
-            </button>
+              Email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 border text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
 
-         
+          <div className="w-full">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Password
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2 border text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2.5 px-4 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            style={{ backgroundColor: 'black' }}
+            onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = 'gray')}
+            onMouseLeave={(e) => !loading && (e.currentTarget.style.backgroundColor = 'black')}
+          >
+            {loading ? 'Signing in...' : 'Sign in'}
+          </button>
         </form>
       </div>
     </div>
