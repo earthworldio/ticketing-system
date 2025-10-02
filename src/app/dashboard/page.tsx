@@ -5,9 +5,60 @@ import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/features/DashboardLayout'
 import Image from 'next/image'
 
+interface Ticket {
+  id: string
+  title: string
+  description: string
+  status: 'Open' | 'In Progress' | 'Resolved' | 'Closed'
+  priority: 'Low' | 'Medium' | 'High'
+  category: string
+  date: string
+}
+
+
+const mockTickets: Ticket[] = [
+  {
+    id: 'TKT101',
+    title: 'VPN connection keeps dropping every 5 minutes',
+    description: 'VPN connection keeps dropping every 5 minutes',
+    status: 'In Progress',
+    priority: 'High',
+    category: 'Network & VPN',
+    date: '9/27/2025'
+  },
+  {
+    id: 'TKT102',
+    title: 'Need Microsoft Office 365 installed on new laptop',
+    description: 'Need Microsoft Office 365 installed on new laptop',
+    status: 'Open',
+    priority: 'Medium',
+    category: 'Software Installation',
+    date: '9/28/2025'
+  },
+  {
+    id: 'TKT103',
+    title: 'Cannot access shared drive after password reset',
+    description: 'Cannot access shared drive after password reset',
+    status: 'Resolved',
+    priority: 'High',
+    category: 'Account & Access',
+    date: '9/26/2025'
+  },
+  {
+    id: 'TKT104',
+    title: 'Keyboard keys not responding properly',
+    description: 'Keyboard keys not responding properly',
+    status: 'Open',
+    priority: 'Low',
+    category: 'Hardware Issues',
+    date: '9/28/2025'
+  }
+]
+
 export default function DashboardPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [tickets, setTickets] = useState<Ticket[]>(mockTickets)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -102,23 +153,94 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Empty State */}
-        <div className="flex flex-col items-center justify-center py-20">
-          <p className="text-black text-2xl font-medium tracking-wide mb-8">
-            Assign project to get started !
-          </p>
-          
-          {/* Coworking Icon */}
-          <div className="relative w-64 h-64">
-            <Image
-              src="/coworking.png"
-              alt="Coworking illustration"
-              fill
-              className="object-contain"
-              priority
-            />
+        {/* Tickets List or Empty State */}
+        {tickets.length === 0 ? (
+          /* Empty State */
+          <div className="flex flex-col items-center justify-center py-20">
+            <p className="text-black text-2xl font-medium tracking-wide mb-8">
+              Assign project to get started !
+            </p>
+            
+            {/* Coworking Icon */}
+            <div className="relative w-64 h-64">
+              <Image
+                src="/coworking.png"
+                alt="Coworking illustration"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
           </div>
-        </div>
+        ) : (
+          /* Tickets List */
+          <div className="space-y-4">
+            {tickets.map((ticket) => (
+              <div
+                key={ticket.id}
+                className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    {/* Ticket Header */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-lg font-semibold text-gray-900">#{ticket.id}</span>
+                      
+                      {/* Status Badge */}
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          ticket.status === 'In Progress'
+                            ? 'bg-orange-100 text-orange-700'
+                            : ticket.status === 'Open'
+                            ? 'bg-blue-100 text-blue-700'
+                            : ticket.status === 'Resolved'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {ticket.status}
+                      </span>
+
+                      {/* Priority Badge */}
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          ticket.priority === 'High'
+                            ? 'bg-red-100 text-red-700'
+                            : ticket.priority === 'Medium'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {ticket.priority}
+                      </span>
+                    </div>
+
+                    {/* Ticket Title */}
+                    <h3 className="text-base text-gray-800 mb-3 font-normal">
+                      {ticket.description}
+                    </h3>
+
+                    {/* Ticket Meta */}
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <span>{ticket.category}</span>
+                      <span>•</span>
+                      <span>{ticket.date}</span>
+                    </div>
+                  </div>
+
+                  {/* View Details Button */}
+                  <button className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 text-sm font-medium transition-colors">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    View Details
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   )
