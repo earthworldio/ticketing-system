@@ -1,18 +1,9 @@
-/**
- * Admin User API Routes (Single User)
- * GET /api/admin/users/[id] - Get user by ID
- * PUT /api/admin/users/[id] - Update user
- * DELETE /api/admin/users/[id] - Delete user
- */
-
 import { NextRequest, NextResponse } from 'next/server';
 import { AdminUserController } from '@/controllers/admin/userController';
 import { UpdateUserDTO } from '@/types';
 
-/**
- * GET /api/admin/users/[id]
- * Get user by ID
- */
+/* GET /api/admin/users/[id] */
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -38,10 +29,7 @@ export async function GET(
   }
 }
 
-/**
- * PUT /api/admin/users/[id]
- * Update user
- */
+/* PUT /api/admin/users/[id] Update user */
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -69,10 +57,7 @@ export async function PUT(
   }
 }
 
-/**
- * DELETE /api/admin/users/[id]
- * Delete user
- */
+/* DELETE /api/admin/users/[id] Delete user */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
