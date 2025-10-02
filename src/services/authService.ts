@@ -15,6 +15,7 @@ export class AuthService {
           error: 'Missing credentials'
         }
       }
+
       const user = await UserService.getUserByEmail(data.email)
       
       if (!user) {
