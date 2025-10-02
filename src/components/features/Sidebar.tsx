@@ -63,9 +63,16 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       >
         {/* Logo */}
         <div className="flex items-center justify-between h-16 px-8">
-          <div className="flex items-center space-x-3">
-            <span className="font-semibold text-lg text-black">FOUR POINT ZERO</span>
-          </div>
+          <div className="flex items-center space-x-3 flex-col">
+            <div className="p-2 rounded-lg shadow-lg" style={{ backgroundColor: '#6366F1' }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-layout-dashboard h-5 w-5 text-white" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg></div>
+            </div>
+            <div className='flex flex-col mr-6'>
+              <span className="font-semibold text-md text-black">Fourpoint 
+                <span className='text-md' style={{ color: '#6366F1' }}> Zero</span>
+              </span>
+              <span className='text-sm text-gray-500'>Ticketing System</span>
+            </div>
           
           {/* Close button for mobile */}
           <button
@@ -79,7 +86,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         </div>
 
         {/* Menu Items */}
-        <nav className="mt-6 px-3">
+        <nav className="mt-8 px-3">
           <div className="space-y-1">
             {menuItems.map((item) => {
               const isActive = pathname === item.path
