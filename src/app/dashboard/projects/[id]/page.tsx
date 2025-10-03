@@ -7,11 +7,13 @@ import TicketModal from '@/components/features/TicketModal'
 import ConfirmModal from '@/components/features/settings/ConfirmModal'
 import Image from 'next/image'
 import { TicketWithRelations, ProjectWithRelations, Priority, User } from '@/types'
+import { usePermission } from '@/hooks/usePermission'
 
 export default function ProjectDetailPage() {
   const router = useRouter()
   const params = useParams()
   const projectId = params.id as string
+  const { hasPermission } = usePermission()
 
   const [loading, setLoading] = useState(true)
   const [project, setProject] = useState<ProjectWithRelations | null>(null)
@@ -197,21 +199,24 @@ export default function ProjectDetailPage() {
             )}
           </div>
 
-          <button
-            onClick={() => {
-              setEditingTicket(null)
-              setShowTicketModal(true)
-            }}
-            className="px-4 py-2 text-white rounded-lg font-medium text-sm flex items-center space-x-2 transition-colors"
-            style={{ backgroundColor: '#6366F1' }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#5558E3')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#6366F1')}
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span>New Ticket</span>
-          </button>
+          {/* New Ticket Button - Only show if user has ticket-create permission */}
+          {hasPermission('ticket-create') && (
+            <button
+              onClick={() => {
+                setEditingTicket(null)
+                setShowTicketModal(true)
+              }}
+              className="px-4 py-2 text-white rounded-lg font-medium text-sm flex items-center space-x-2 transition-colors"
+              style={{ backgroundColor: '#6366F1' }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#5558E3')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#6366F1')}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span>New Ticket</span>
+            </button>
+          )}
         </div>
 
         {/* Project Description */}
@@ -226,7 +231,24 @@ export default function ProjectDetailPage() {
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Tickets</h2>
           
-          {loadingTickets ? (
+          {!hasPermission('ticket-read') ? (
+            /* No Permission Message */
+            <div className="flex flex-col items-center justify-center py-20 bg-white border border-gray-200 rounded-lg">
+              <div className="text-center">
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <p className="text-xl font-medium text-gray-700 mb-2">Access Denied</p>
+                <p className="text-sm text-gray-500 mb-3">You don't have permission to view tickets.</p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  </svg>
+                  <span className="text-sm font-mono text-gray-700">Required: <strong>ticket-read</strong></span>
+                </div>
+              </div>
+            </div>
+          ) : loadingTickets ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6366F1]"></div>
               <span className="ml-3 text-gray-600">Loading tickets...</span>
