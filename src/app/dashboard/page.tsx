@@ -158,16 +158,16 @@ export default function DashboardPage() {
   /* Format SLA */
   const formatSLA = (minutes: number): string => {
     if (minutes < 60) {
-      return `${minutes}m`
+      return `${minutes} Minutes`
     } else if (minutes < 1440) {
       const hours = Math.floor(minutes / 60)
-      return `${hours}h`
+      return `${hours} Hours`
     } else if (minutes < 43200) {
       const days = Math.floor(minutes / 1440)
-      return `${days}d`
+      return `${days} Days`
     } else {
       const months = Math.floor(minutes / 43200)
-      return `${months}mo`
+      return `${months} Months`
     }
   }
 
