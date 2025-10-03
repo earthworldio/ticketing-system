@@ -20,14 +20,19 @@ export function usePermission() {
 
         const user = JSON.parse(userData)
         
-        // Fetch role permissions
         if (user.role_id) {
-          const response = await fetch(`/api/role-permissions/role/${user.role_id}`)
+          const response = await fetch(`/api/role-permissions/role/${user.role_id}`, {
+            headers: {
+              'Cache-Control': 'no-cache',
+            }
+          })
           const data = await response.json()
           
+          
           if (data.success && data.data) {
-            // Extract permission names from the response
-            const permissionNames = data.data.map((item: any) => item.permission_name)
+            const permissionNames = data.data
+              .filter((item: any) => item.is_active !== false)
+              .map((item: any) => item.name || item.permission_name)
             setPermissions(permissionNames)
           }
         }

@@ -83,7 +83,8 @@ export class RolePermissionModel {
         rp.id as assignment_id
       FROM permission p
       JOIN role_permission rp ON p.id = rp.permission_id
-      WHERE rp.role_id = $1
+      WHERE rp.role_id = $1 AND rp.is_active = true
+      ORDER BY p.name
     `, [role_id])
     return result.rows
   }
