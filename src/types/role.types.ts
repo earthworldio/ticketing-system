@@ -30,6 +30,11 @@ export interface CreateRoleDTO {
   description?: string
 }
 
+export interface UpdateRoleDTO {
+  name: string
+  description?: string
+}
+
 export interface CreatePermissionDTO {
   name: string
   description?: string
@@ -43,6 +48,11 @@ export interface UpdatePermissionDTO {
 export interface AssignPermissionDTO {
   role_id: string
   permission_id: string
+}
+
+export interface AssignPermissionsDTO {
+  role_id: string
+  permission_ids: string[]
 }
 
 export interface RoleWithPermissions extends Role {

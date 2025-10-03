@@ -33,6 +33,7 @@ export default function SettingsPage() {
   /* Assignments state */
   const [assignments, setAssignments] = useState<any[]>([])
   const [assignmentLoading, setAssignmentLoading] = useState(false)
+  const [editingAssignment, setEditingAssignment] = useState<any | null>(null)
   const [deletingAssignment, setDeletingAssignment] = useState<any | null>(null)
   const [deleteAssignmentLoading, setDeleteAssignmentLoading] = useState(false)
 
@@ -230,24 +231,58 @@ export default function SettingsPage() {
     }
   }
 
-  /* Assign permission to role */
-  const handleAssignPermission = async (formData: { role_id: string; permission_id: string }) => {
-    const response = await fetch('/api/role-permissions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-    })
+  /* Assign or Update assignment */
+  const handleSaveAssignment = async (formData: { role_id: string; permission_ids?: string[]; permission_id?: string }) => {
+    const isEdit = !!editingAssignment
+    
+    if (isEdit) {
+      // Edit mode: ใช้ API เดิม (single permission)
+      const url = `/api/role-permissions/${editingAssignment.id}`
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          role_id: formData.role_id,
+          permission_id: formData.permission_ids?.[0] || formData.permission_id
+        }),
+      })
 
-    const data = await response.json()
+      const data = await response.json()
 
-    if (!data.success) {
-      throw new Error(data.message || 'Failed to assign permission')
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to update assignment')
+      }
+    } else {
+      // Create mode: ใช้ API ใหม่ (multiple permissions)
+      const response = await fetch('/api/role-permissions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          role_id: formData.role_id,
+          permission_ids: formData.permission_ids || []
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to assign permissions')
+      }
     }
 
     /* Refresh assignments list */
     await fetchAssignments()
+    setEditingAssignment(null)
+  }
+
+  /* Handle edit assignment click */
+  const handleEditAssignment = (assignment: any) => {
+    setEditingAssignment(assignment)
+    setShowAssignModal(true)
   }
 
   /* Handle delete assignment click */
@@ -281,6 +316,12 @@ export default function SettingsPage() {
     } finally {
       setDeleteAssignmentLoading(false)
     }
+  }
+
+  /* Close modal and reset editing state */
+  const handleCloseAssignModal = () => {
+    setShowAssignModal(false)
+    setEditingAssignment(null)
   }
 
   /* Load data on mount and when tab changes */
@@ -336,6 +377,7 @@ export default function SettingsPage() {
               assignments={assignments}
               loading={assignmentLoading}
               onAssignPermission={() => setShowAssignModal(true)}
+              onEditAssignment={handleEditAssignment}
               onDeleteAssignment={handleDeleteAssignmentClick}
             />
           )}
@@ -368,10 +410,15 @@ export default function SettingsPage() {
         />
         <SettingsModal
           isOpen={showAssignModal}
-          onClose={() => setShowAssignModal(false)}
-          title="Assign Permission to Role"
+          onClose={handleCloseAssignModal}
+          title={editingAssignment ? 'Edit Assignment' : 'Assign Permission to Role'}
           type="assign"
-          onSubmit={handleAssignPermission}
+          onSubmit={handleSaveAssignment}
+          initialData={editingAssignment ? {
+            id: editingAssignment.id,
+            role_id: editingAssignment.role_id,
+            permission_id: editingAssignment.permission_id
+          } : undefined}
           roles={roles}
           permissions={permissions}
         />

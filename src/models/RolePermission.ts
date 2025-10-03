@@ -56,6 +56,18 @@ export class RolePermissionModel {
     return result.rows[0] || null
   }
 
+  /* Update assignment */
+  static async update(id: string, data: AssignPermissionDTO): Promise<any> {
+    const result = await query(
+      `UPDATE role_permission 
+       SET role_id = $1, permission_id = $2, updated_date = now() 
+       WHERE id = $3 
+       RETURNING *`,
+      [data.role_id, data.permission_id, id]
+    )
+    return result.rows[0] || null
+  }
+
   /* Delete assignment */
   static async delete(id: string): Promise<boolean> {
     const result = await query('DELETE FROM role_permission WHERE id = $1', [id])

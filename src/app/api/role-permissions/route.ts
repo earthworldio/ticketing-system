@@ -2,14 +2,14 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { RolePermissionController } from '@/controllers/rolePermissionController'
-import { AssignPermissionDTO } from '@/types'
+import { AssignPermissionsDTO } from '@/types'
 
-/* POST /api/role-permissions - Assign permission to role */
+/* POST /api/role-permissions - Assign permissions to role */
 export async function POST(request: NextRequest) {
   try {
-    const body: AssignPermissionDTO = await request.json()
+    const body: AssignPermissionsDTO = await request.json()
 
-    const result = await RolePermissionController.assignPermission(body)
+    const result = await RolePermissionController.assignPermissions(body)
 
     if (!result.success) {
       return NextResponse.json(result, { status: 400 })

@@ -2,6 +2,35 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { RolePermissionController } from '@/controllers/rolePermissionController'
+import { AssignPermissionDTO } from '@/types'
+
+/* PUT /api/role-permissions/[id] - Update assignment */
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const body: AssignPermissionDTO = await request.json()
+
+    const result = await RolePermissionController.updateAssignment(id, body)
+
+    if (!result.success) {
+      return NextResponse.json(result, { status: 400 })
+    }
+
+    return NextResponse.json(result, { status: 200 })
+  } catch (error: any) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Failed to update assignment',
+        error: error.message
+      },
+      { status: 500 }
+    )
+  }
+}
 
 /* DELETE /api/role-permissions/[id] - Delete assignment */
 export async function DELETE(
