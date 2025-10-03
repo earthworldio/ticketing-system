@@ -14,7 +14,7 @@ export interface User {
   phone?: string | null;
   created_date: Date;
   updated_date: Date;
-  activate: boolean;
+  is_active: boolean;
 }
 
 export interface CreateUserDTO {

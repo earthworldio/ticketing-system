@@ -26,7 +26,7 @@ export class AuthService {
         }
       }
 
-      if (!user.activate) {
+      if (!user.is_active) {
         return {
           success: false,
           message: 'Account is deactivated',
