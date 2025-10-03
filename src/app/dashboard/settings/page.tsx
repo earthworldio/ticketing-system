@@ -30,6 +30,12 @@ export default function SettingsPage() {
   const [deletingPermission, setDeletingPermission] = useState<Permission | null>(null)
   const [deletePermissionLoading, setDeletePermissionLoading] = useState(false)
 
+  /* Assignments state */
+  const [assignments, setAssignments] = useState<any[]>([])
+  const [assignmentLoading, setAssignmentLoading] = useState(false)
+  const [deletingAssignment, setDeletingAssignment] = useState<any | null>(null)
+  const [deleteAssignmentLoading, setDeleteAssignmentLoading] = useState(false)
+
   /* Fetch roles */
   const fetchRoles = async () => {
     setLoading(true)
@@ -205,11 +211,88 @@ export default function SettingsPage() {
     setEditingPermission(null)
   }
 
+  /* === ASSIGNMENT HANDLERS === */
+
+  /* Fetch assignments */
+  const fetchAssignments = async () => {
+    setAssignmentLoading(true)
+    try {
+      const response = await fetch('/api/role-permissions')
+      const data = await response.json()
+      
+      if (data.success) {
+        setAssignments(data.data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch assignments:', error)
+    } finally {
+      setAssignmentLoading(false)
+    }
+  }
+
+  /* Assign permission to role */
+  const handleAssignPermission = async (formData: { role_id: string; permission_id: string }) => {
+    const response = await fetch('/api/role-permissions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    })
+
+    const data = await response.json()
+
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to assign permission')
+    }
+
+    /* Refresh assignments list */
+    await fetchAssignments()
+  }
+
+  /* Handle delete assignment click */
+  const handleDeleteAssignmentClick = (assignment: any) => {
+    setDeletingAssignment(assignment)
+  }
+
+  /* Confirm delete assignment */
+  const handleConfirmDeleteAssignment = async () => {
+    if (!deletingAssignment) return
+
+    setDeleteAssignmentLoading(true)
+    try {
+      const response = await fetch(`/api/role-permissions/${deletingAssignment.id}`, {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        alert(data.message || 'Failed to delete assignment')
+        return
+      }
+
+      /* Refresh assignments list */
+      await fetchAssignments()
+      setDeletingAssignment(null)
+    } catch (error) {
+      console.error('Failed to delete assignment:', error)
+      alert('Failed to delete assignment')
+    } finally {
+      setDeleteAssignmentLoading(false)
+    }
+  }
+
   /* Load data on mount and when tab changes */
   useEffect(() => {
     if (activeTab === 'roles') {
       fetchRoles()
     } else if (activeTab === 'permissions') {
+      fetchPermissions()
+    } else if (activeTab === 'assignments') {
+      fetchAssignments()
+      /* Also load roles and permissions for dropdowns */
+      fetchRoles()
       fetchPermissions()
     }
   }, [activeTab])
@@ -248,7 +331,14 @@ export default function SettingsPage() {
               onDeletePermission={handleDeletePermissionClick}
             />
           )}
-          {activeTab === 'assignments' && <AssignmentsTab onAssignPermission={() => setShowAssignModal(true)} />}
+          {activeTab === 'assignments' && (
+            <AssignmentsTab 
+              assignments={assignments}
+              loading={assignmentLoading}
+              onAssignPermission={() => setShowAssignModal(true)}
+              onDeleteAssignment={handleDeleteAssignmentClick}
+            />
+          )}
         </div>
 
         {/* Modals */}
@@ -279,8 +369,11 @@ export default function SettingsPage() {
         <SettingsModal
           isOpen={showAssignModal}
           onClose={() => setShowAssignModal(false)}
-          title="Assign Permission"
+          title="Assign Permission to Role"
           type="assign"
+          onSubmit={handleAssignPermission}
+          roles={roles}
+          permissions={permissions}
         />
 
         {/* Delete Confirmation Modals */}
@@ -304,6 +397,17 @@ export default function SettingsPage() {
           confirmText="Delete"
           cancelText="Cancel"
           isLoading={deletePermissionLoading}
+        />
+
+        <ConfirmModal
+          isOpen={!!deletingAssignment}
+          onClose={() => setDeletingAssignment(null)}
+          onConfirm={handleConfirmDeleteAssignment}
+          title="Remove Assignment"
+          message={`Are you sure you want to remove "${deletingAssignment?.permission_name}" from "${deletingAssignment?.role_name}"?`}
+          confirmText="Remove"
+          cancelText="Cancel"
+          isLoading={deleteAssignmentLoading}
         />
       </div>
     </DashboardLayout>

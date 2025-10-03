@@ -9,26 +9,37 @@ interface SettingsModalProps {
   type: 'role' | 'permission' | 'assign'
   onSubmit?: (data: any) => Promise<void>
   initialData?: { id?: string; name?: string; description?: string | null }
+  roles?: Array<{ id: string; name: string }>
+  permissions?: Array<{ id: string; name: string }>
 }
 
-export default function SettingsModal({ isOpen, onClose, title, type, onSubmit, initialData }: SettingsModalProps) {
-  const [formData, setFormData] = useState({ name: '', description: '' })
+export default function SettingsModal({ 
+  isOpen, 
+  onClose, 
+  title, 
+  type, 
+  onSubmit, 
+  initialData,
+  roles = [],
+  permissions = []
+}: SettingsModalProps) {
+  const [formData, setFormData] = useState({ name: '', description: '', role_id: '', permission_id: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Load initial data when modal opens (for edit mode)
   useEffect(() => {
-    if (isOpen && initialData) {
+    if (isOpen && initialData && type !== 'assign') {
       setFormData({
         name: initialData.name || '',
-        description: initialData.description || ''
+        description: initialData.description || '',
+        role_id: '',
+        permission_id: ''
       })
     } else if (!isOpen) {
-      // Reset form when modal closes
-      setFormData({ name: '', description: '' })
+      setFormData({ name: '', description: '', role_id: '', permission_id: '' })
       setError('')
     }
-  }, [isOpen, initialData])
+  }, [isOpen, initialData, type])
 
   if (!isOpen) return null
 
@@ -39,8 +50,12 @@ export default function SettingsModal({ isOpen, onClose, title, type, onSubmit, 
 
     try {
       if (onSubmit) {
-        await onSubmit(formData)
-        setFormData({ name: '', description: '' })
+        if (type === 'assign') {
+          await onSubmit({ role_id: formData.role_id, permission_id: formData.permission_id })
+        } else {
+          await onSubmit({ name: formData.name, description: formData.description })
+        }
+        setFormData({ name: '', description: '', role_id: '', permission_id: '' })
         onClose()
       }
     } catch (err: any) {
@@ -88,34 +103,82 @@ export default function SettingsModal({ isOpen, onClose, title, type, onSubmit, 
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-              Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="name"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
-              placeholder={`Enter ${type} name`}
-            />
-          </div>
+          {type === 'assign' ? (
+            /* Assign Permission Form */
+            <>
+              <div>
+                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+                  Role <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="role"
+                  required
+                  value={formData.role_id}
+                  onChange={(e) => setFormData({ ...formData, role_id: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
+                >
+                  <option value="">Select a role</option>
+                  {roles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
-            <textarea
-              id="description"
-              rows={3}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent resize-none"
-              placeholder={`Enter ${type} description (optional)`}
-            />
-          </div>
+              <div>
+                <label htmlFor="permission" className="block text-sm font-medium text-gray-700 mb-2">
+                  Permission <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="permission"
+                  required
+                  value={formData.permission_id}
+                  onChange={(e) => setFormData({ ...formData, permission_id: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
+                >
+                  <option value="">Select a permission</option>
+                  {permissions.map((permission) => (
+                    <option key={permission.id} value={permission.id}>
+                      {permission.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          ) : (
+            /* Role/Permission Form */
+            <>
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
+                  placeholder={`Enter ${type} name`}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  rows={3}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent resize-none"
+                  placeholder={`Enter ${type} description (optional)`}
+                />
+              </div>
+            </>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
@@ -128,13 +191,16 @@ export default function SettingsModal({ isOpen, onClose, title, type, onSubmit, 
             </button>
             <button
               type="submit"
-              disabled={loading || !formData.name}
+              disabled={loading || (type === 'assign' ? (!formData.role_id || !formData.permission_id) : !formData.name)}
               className="flex-1 px-4 py-2.5 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: '#6366F1' }}
               onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = '#5558E3')}
               onMouseLeave={(e) => !loading && (e.currentTarget.style.backgroundColor = '#6366F1')}
             >
-              {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update' : 'Create')}
+              {loading 
+                ? (type === 'assign' ? 'Assigning...' : (isEditMode ? 'Updating...' : 'Creating...')) 
+                : (type === 'assign' ? 'Assign' : (isEditMode ? 'Update' : 'Create'))
+              }
             </button>
           </div>
         </form>
