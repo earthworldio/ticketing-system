@@ -5,65 +5,14 @@ import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/features/DashboardLayout'
 import ProjectModal from '@/components/features/ProjectModal'
 import Image from 'next/image'
-import { Project } from '@/types'
-
-interface Ticket {
-  id: string
-  title: string
-  description: string
-  status: 'Open' | 'In Progress' | 'Resolved' | 'Closed'
-  priority: 'Low' | 'Medium' | 'High'
-  category: string
-  date: string
-}
-
-
-const mockTickets: Ticket[] = [
-  {
-    id: 'TKT101',
-    title: 'VPN connection keeps dropping every 5 minutes',
-    description: 'VPN connection keeps dropping every 5 minutes',
-    status: 'In Progress',
-    priority: 'High',
-    category: 'Network & VPN',
-    date: '9/27/2025'
-  },
-  {
-    id: 'TKT102',
-    title: 'Need Microsoft Office 365 installed on new laptop',
-    description: 'Need Microsoft Office 365 installed on new laptop',
-    status: 'Open',
-    priority: 'Medium',
-    category: 'Software Installation',
-    date: '9/28/2025'
-  },
-  {
-    id: 'TKT103',
-    title: 'Cannot access shared drive after password reset',
-    description: 'Cannot access shared drive after password reset',
-    status: 'Resolved',
-    priority: 'High',
-    category: 'Account & Access',
-    date: '9/26/2025'
-  },
-  {
-    id: 'TKT104',
-    title: 'Keyboard keys not responding properly',
-    description: 'Keyboard keys not responding properly',
-    status: 'Open',
-    priority: 'Low',
-    category: 'Hardware Issues',
-    date: '9/28/2025'
-  }
-]
+import { ProjectWithRelations } from '@/types'
 
 export default function DashboardPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [showProjectModal, setShowProjectModal] = useState(false)
-  const [projects, setProjects] = useState<Project[]>([])
+  const [projects, setProjects] = useState<ProjectWithRelations[]>([])
   const [loadingProjects, setLoadingProjects] = useState(false)
-  const [tickets, setTickets] = useState<Ticket[]>(mockTickets)
   const [projectCreators, setProjectCreators] = useState<Record<string, any>>({})
 
   useEffect(() => {
@@ -89,7 +38,7 @@ export default function DashboardPage() {
       if (data.success) {
         setProjects(data.data)
         
-        // Fetch creator info for each project
+        /* Fetch creator info for each project */
         const creators: Record<string, any> = {}
         for (const project of data.data) {
           if (project.created_by && !creators[project.created_by]) {
@@ -116,7 +65,7 @@ export default function DashboardPage() {
   /* Handle create project */
   const handleCreateProject = async (projectData: any) => {
     try {
-      // Get token for authentication
+      /* Get token for authentication */
       const token = localStorage.getItem('token')
       if (!token) {
         throw new Error('Authentication required')
@@ -290,7 +239,7 @@ export default function DashboardPage() {
                     {/* Project Header */}
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-lg font-semibold" style={{ color: '#6366F1' }}>
-                        {project.customer_code}
+                        {project.code}
                       </span>
                       <span className="text-lg font-medium" style={{ color: 'black' }}>
                         {project.name}
@@ -355,15 +304,16 @@ export default function DashboardPage() {
                         </div>
                       )}
 
-                      {/* Open Project Button */}
-                      <button 
-                        className="text-sm font-medium transition-colors"
-                        style={{ color: '#6366F1' }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = '#5558E3')}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = '#6366F1')}
-                      >
-                        Open Project
-                      </button>
+                        {/* Open Project Button */}
+                        <button 
+                          onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+                          className="text-sm font-medium transition-colors"
+                          style={{ color: '#6366F1' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = '#5558E3')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = '#6366F1')}
+                        >
+                          Open Project
+                        </button>
                     </div> 
                   </div>
                 </div>

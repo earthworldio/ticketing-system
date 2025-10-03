@@ -1,8 +1,8 @@
 'use client'
 
 interface SettingsTabsProps {
-  activeTab: 'roles' | 'permissions' | 'assignments' | 'customers' | 'priorities'
-  onTabChange: (tab: 'roles' | 'permissions' | 'assignments' | 'customers' | 'priorities') => void
+  activeTab: 'roles' | 'permissions' | 'assignments' | 'customers' | 'priorities' | 'statuses'
+  onTabChange: (tab: 'roles' | 'permissions' | 'assignments' | 'customers' | 'priorities' | 'statuses') => void
 }
 
 export default function SettingsTabs({ activeTab, onTabChange }: SettingsTabsProps) {
@@ -12,6 +12,7 @@ export default function SettingsTabs({ activeTab, onTabChange }: SettingsTabsPro
     { id: 'assignments', label: 'Role-Permission Assignments' },
     { id: 'customers', label: 'Customers' },
     { id: 'priorities', label: 'Priorities' },
+    { id: 'statuses', label: 'Status' },
   ] as const
 
   return (

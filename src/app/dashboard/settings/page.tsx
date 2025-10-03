@@ -8,17 +8,19 @@ import PermissionsTab from '@/components/features/settings/PermissionsTab'
 import AssignmentsTab from '@/components/features/settings/AssignmentsTab'
 import CustomersTab from '@/components/features/settings/CustomersTab'
 import PrioritiesTab from '@/components/features/settings/PrioritiesTab'
+import StatusTab from '@/components/features/settings/StatusTab'
 import SettingsModal from '@/components/features/settings/SettingsModal'
 import ConfirmModal from '@/components/features/settings/ConfirmModal'
-import { Role, Permission, Customer, Priority } from '@/types'
+import { Role, Permission, Customer, Priority, Status } from '@/types'
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'roles' | 'permissions' | 'assignments' | 'customers' | 'priorities'>('roles')
+  const [activeTab, setActiveTab] = useState<'roles' | 'permissions' | 'assignments' | 'customers' | 'priorities' | 'statuses'>('roles')
   const [showRoleModal, setShowRoleModal] = useState(false)
   const [showPermissionModal, setShowPermissionModal] = useState(false)
   const [showAssignModal, setShowAssignModal] = useState(false)
   const [showCustomerModal, setShowCustomerModal] = useState(false)
   const [showPriorityModal, setShowPriorityModal] = useState(false)
+  const [showStatusModal, setShowStatusModal] = useState(false)
   
   /* Roles state */
   const [roles, setRoles] = useState<Role[]>([])
@@ -54,6 +56,13 @@ export default function SettingsPage() {
   const [editingPriority, setEditingPriority] = useState<Priority | null>(null)
   const [deletingPriority, setDeletingPriority] = useState<Priority | null>(null)
   const [deletePriorityLoading, setDeletePriorityLoading] = useState(false)
+
+  /* Statuses state */
+  const [statuses, setStatuses] = useState<Status[]>([])
+  const [statusLoading, setStatusLoading] = useState(false)
+  const [editingStatus, setEditingStatus] = useState<Status | null>(null)
+  const [deletingStatus, setDeletingStatus] = useState<Status | null>(null)
+  const [deleteStatusLoading, setDeleteStatusLoading] = useState(false)
 
   /* ========== ROLES HANDLERS ========== */
   
@@ -481,6 +490,91 @@ export default function SettingsPage() {
     setEditingPriority(null)
   }
 
+  /* ========== STATUSES HANDLERS ========== */
+
+  const fetchStatuses = async () => {
+    setStatusLoading(true)
+    try {
+      const response = await fetch('/api/statuses')
+      const data = await response.json()
+      
+      if (data.success) {
+        setStatuses(data.data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch statuses:', error)
+    } finally {
+      setStatusLoading(false)
+    }
+  }
+
+  const handleSaveStatus = async (formData: { name: string }) => {
+    const isEdit = !!editingStatus
+    const url = isEdit ? `/api/statuses/${editingStatus.id}` : '/api/statuses'
+    const method = isEdit ? 'PUT' : 'POST'
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to save status')
+      }
+
+      fetchStatuses()
+      handleCloseStatusModal()
+    } catch (error: any) {
+      alert(error.message)
+    }
+  }
+
+  const handleEditStatus = (status: Status) => {
+    setEditingStatus(status)
+    setShowStatusModal(true)
+  }
+
+  const handleDeleteStatusClick = (id: string) => {
+    const status = statuses.find(s => s.id === id)
+    if (status) {
+      setDeletingStatus(status)
+    }
+  }
+
+  const handleConfirmDeleteStatus = async () => {
+    if (!deletingStatus) return
+
+    setDeleteStatusLoading(true)
+    try {
+      const response = await fetch(`/api/statuses/${deletingStatus.id}`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to delete status')
+      }
+
+      fetchStatuses()
+      setDeletingStatus(null)
+    } catch (error) {
+      console.error('Failed to delete status:', error)
+      alert('Failed to delete status')
+    } finally {
+      setDeleteStatusLoading(false)
+    }
+  }
+
+  const handleCloseStatusModal = () => {
+    setShowStatusModal(false)
+    setEditingStatus(null)
+  }
+
   /* ========== LOAD DATA ON TAB CHANGE ========== */
 
   useEffect(() => {
@@ -496,6 +590,8 @@ export default function SettingsPage() {
       fetchCustomers()
     } else if (activeTab === 'priorities') {
       fetchPriorities()
+    } else if (activeTab === 'statuses') {
+      fetchStatuses()
     }
   }, [activeTab])
 
@@ -558,6 +654,15 @@ export default function SettingsPage() {
               onCreatePriority={() => setShowPriorityModal(true)}
               onEditPriority={handleEditPriority}
               onDeletePriority={handleDeletePriorityClick}
+            />
+          )}
+          {activeTab === 'statuses' && (
+            <StatusTab
+              statuses={statuses}
+              loading={statusLoading}
+              onCreateStatus={() => setShowStatusModal(true)}
+              onEditStatus={handleEditStatus}
+              onDeleteStatus={handleDeleteStatusClick}
             />
           )}
         </div>
@@ -624,6 +729,17 @@ export default function SettingsPage() {
             name: editingPriority.name
           } : undefined}
         />
+        <SettingsModal
+          isOpen={showStatusModal}
+          onClose={handleCloseStatusModal}
+          title={editingStatus ? 'Edit Status' : 'Create Status'}
+          type="status"
+          onSubmit={handleSaveStatus}
+          initialData={editingStatus ? {
+            id: editingStatus.id,
+            name: editingStatus.name
+          } : undefined}
+        />
 
         {/* Delete Confirmation Modals */}
         <ConfirmModal
@@ -675,6 +791,16 @@ export default function SettingsPage() {
           confirmText="Delete"
           cancelText="Cancel"
           isLoading={deletePriorityLoading}
+        />
+        <ConfirmModal
+          isOpen={!!deletingStatus}
+          onClose={() => setDeletingStatus(null)}
+          onConfirm={handleConfirmDeleteStatus}
+          title="Delete Status"
+          message={`Are you sure you want to delete "${deletingStatus?.name}"? This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          isLoading={deleteStatusLoading}
         />
       </div>
     </DashboardLayout>

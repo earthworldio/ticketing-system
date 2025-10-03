@@ -13,8 +13,9 @@ export interface Project {
   updated_date: Date;
   created_by?: string | null;
   updated_by?: string | null;
-  
+}
 
+export interface ProjectWithRelations extends Project {
   customer_name?: string;
   customer_code?: string;
   sla_resolve_time?: number; /* from joined SLA table */

@@ -6,3 +6,5 @@ export * from './customer.types';
 export * from './priority.types';
 export * from './project.types';
 export * from './sla.types';
+export * from './ticket.types';
+export * from './status.types';
