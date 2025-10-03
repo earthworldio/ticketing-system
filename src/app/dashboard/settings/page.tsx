@@ -6,15 +6,19 @@ import SettingsTabs from '@/components/features/settings/SettingsTabs'
 import RolesTab from '@/components/features/settings/RolesTab'
 import PermissionsTab from '@/components/features/settings/PermissionsTab'
 import AssignmentsTab from '@/components/features/settings/AssignmentsTab'
+import CustomersTab from '@/components/features/settings/CustomersTab'
+import PrioritiesTab from '@/components/features/settings/PrioritiesTab'
 import SettingsModal from '@/components/features/settings/SettingsModal'
 import ConfirmModal from '@/components/features/settings/ConfirmModal'
-import { Role, Permission } from '@/types'
+import { Role, Permission, Customer, Priority } from '@/types'
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'roles' | 'permissions' | 'assignments'>('roles')
+  const [activeTab, setActiveTab] = useState<'roles' | 'permissions' | 'assignments' | 'customers' | 'priorities'>('roles')
   const [showRoleModal, setShowRoleModal] = useState(false)
   const [showPermissionModal, setShowPermissionModal] = useState(false)
   const [showAssignModal, setShowAssignModal] = useState(false)
+  const [showCustomerModal, setShowCustomerModal] = useState(false)
+  const [showPriorityModal, setShowPriorityModal] = useState(false)
   
   /* Roles state */
   const [roles, setRoles] = useState<Role[]>([])
@@ -37,7 +41,22 @@ export default function SettingsPage() {
   const [deletingAssignment, setDeletingAssignment] = useState<any | null>(null)
   const [deleteAssignmentLoading, setDeleteAssignmentLoading] = useState(false)
 
-  /* Fetch roles */
+  /* Customers state */
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [customerLoading, setCustomerLoading] = useState(false)
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
+  const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null)
+  const [deleteCustomerLoading, setDeleteCustomerLoading] = useState(false)
+
+  /* Priorities state */
+  const [priorities, setPriorities] = useState<Priority[]>([])
+  const [priorityLoading, setPriorityLoading] = useState(false)
+  const [editingPriority, setEditingPriority] = useState<Priority | null>(null)
+  const [deletingPriority, setDeletingPriority] = useState<Priority | null>(null)
+  const [deletePriorityLoading, setDeletePriorityLoading] = useState(false)
+
+  /* ========== ROLES HANDLERS ========== */
+  
   const fetchRoles = async () => {
     setLoading(true)
     try {
@@ -54,7 +73,6 @@ export default function SettingsPage() {
     }
   }
 
-  /* Create or Update role */
   const handleSaveRole = async (formData: { name: string; description: string }) => {
     const isEdit = !!editingRole
     const url = isEdit ? `/api/roles/${editingRole.id}` : '/api/roles'
@@ -74,23 +92,19 @@ export default function SettingsPage() {
       throw new Error(data.message || `Failed to ${isEdit ? 'update' : 'create'} role`)
     }
 
-    // Refresh roles list
     await fetchRoles()
     setEditingRole(null)
   }
 
-  /* Handle edit click */
   const handleEditRole = (role: Role) => {
     setEditingRole(role)
     setShowRoleModal(true)
   }
 
-  /* Handle delete click */
   const handleDeleteClick = (role: Role) => {
     setDeletingRole(role)
   }
 
-  /* Confirm delete */
   const handleConfirmDelete = async () => {
     if (!deletingRole) return
 
@@ -107,7 +121,6 @@ export default function SettingsPage() {
         return
       }
 
-      // Refresh roles list
       await fetchRoles()
       setDeletingRole(null)
     } catch (error) {
@@ -118,20 +131,19 @@ export default function SettingsPage() {
     }
   }
 
-  /* Close modal and reset editing state */
   const handleCloseRoleModal = () => {
     setShowRoleModal(false)
     setEditingRole(null)
   }
 
-  /* Permission handlers */
+  /* ========== PERMISSIONS HANDLERS ========== */
 
   const fetchPermissions = async () => {
     setPermissionLoading(true)
     try {
       const response = await fetch('/api/permissions')
       const data = await response.json()
-      
+
       if (data.success) {
         setPermissions(data.data)
       }
@@ -142,7 +154,6 @@ export default function SettingsPage() {
     }
   }
 
-  /* Create or Update permission */
   const handleSavePermission = async (formData: { name: string; description: string }) => {
     const isEdit = !!editingPermission
     const url = isEdit ? `/api/permissions/${editingPermission.id}` : '/api/permissions'
@@ -162,23 +173,19 @@ export default function SettingsPage() {
       throw new Error(data.message || `Failed to ${isEdit ? 'update' : 'create'} permission`)
     }
 
-    // Refresh permissions list
     await fetchPermissions()
     setEditingPermission(null)
   }
 
-  /* Handle edit click */
   const handleEditPermission = (permission: Permission) => {
     setEditingPermission(permission)
     setShowPermissionModal(true)
   }
 
-  /* Handle delete click */
   const handleDeletePermissionClick = (permission: Permission) => {
     setDeletingPermission(permission)
   }
 
-  /* Confirm delete */
   const handleConfirmDeletePermission = async () => {
     if (!deletingPermission) return
 
@@ -195,7 +202,6 @@ export default function SettingsPage() {
         return
       }
 
-      // Refresh permissions list
       await fetchPermissions()
       setDeletingPermission(null)
     } catch (error) {
@@ -206,21 +212,19 @@ export default function SettingsPage() {
     }
   }
 
-  /* Close modal and reset editing state */
   const handleClosePermissionModal = () => {
     setShowPermissionModal(false)
     setEditingPermission(null)
   }
 
-  /* === ASSIGNMENT HANDLERS === */
+  /* ========== ASSIGNMENTS HANDLERS ========== */
 
-  /* Fetch assignments */
   const fetchAssignments = async () => {
     setAssignmentLoading(true)
     try {
       const response = await fetch('/api/role-permissions')
       const data = await response.json()
-      
+
       if (data.success) {
         setAssignments(data.data)
       }
@@ -231,12 +235,10 @@ export default function SettingsPage() {
     }
   }
 
-  /* Assign or Update assignment */
   const handleSaveAssignment = async (formData: { role_id: string; permission_ids?: string[]; permission_id?: string }) => {
     const isEdit = !!editingAssignment
-    
+
     if (isEdit) {
-      // Edit mode: ใช้ API เดิม (single permission)
       const url = `/api/role-permissions/${editingAssignment.id}`
       const response = await fetch(url, {
         method: 'PUT',
@@ -255,7 +257,6 @@ export default function SettingsPage() {
         throw new Error(data.message || 'Failed to update assignment')
       }
     } else {
-      // Create mode: ใช้ API ใหม่ (multiple permissions)
       const response = await fetch('/api/role-permissions', {
         method: 'POST',
         headers: {
@@ -274,23 +275,19 @@ export default function SettingsPage() {
       }
     }
 
-    /* Refresh assignments list */
     await fetchAssignments()
     setEditingAssignment(null)
   }
 
-  /* Handle edit assignment click */
   const handleEditAssignment = (assignment: any) => {
     setEditingAssignment(assignment)
     setShowAssignModal(true)
   }
 
-  /* Handle delete assignment click */
   const handleDeleteAssignmentClick = (assignment: any) => {
     setDeletingAssignment(assignment)
   }
 
-  /* Confirm delete assignment */
   const handleConfirmDeleteAssignment = async () => {
     if (!deletingAssignment) return
 
@@ -307,7 +304,6 @@ export default function SettingsPage() {
         return
       }
 
-      /* Refresh assignments list */
       await fetchAssignments()
       setDeletingAssignment(null)
     } catch (error) {
@@ -318,13 +314,175 @@ export default function SettingsPage() {
     }
   }
 
-  /* Close modal and reset editing state */
   const handleCloseAssignModal = () => {
     setShowAssignModal(false)
     setEditingAssignment(null)
   }
 
-  /* Load data on mount and when tab changes */
+  /* ========== CUSTOMERS HANDLERS ========== */
+
+  const fetchCustomers = async () => {
+    setCustomerLoading(true)
+    try {
+      const response = await fetch('/api/customers')
+      const data = await response.json()
+
+      if (data.success) {
+        setCustomers(data.data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch customers:', error)
+    } finally {
+      setCustomerLoading(false)
+    }
+  }
+
+  const handleSaveCustomer = async (formData: { name: string; code: string }) => {
+    const isEdit = !!editingCustomer
+    const url = isEdit ? `/api/customers/${editingCustomer.id}` : '/api/customers'
+    const method = isEdit ? 'PUT' : 'POST'
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    })
+
+    const data = await response.json()
+
+    if (!data.success) {
+      throw new Error(data.message || `Failed to ${isEdit ? 'update' : 'create'} customer`)
+    }
+
+    await fetchCustomers()
+    setEditingCustomer(null)
+  }
+
+  const handleEditCustomer = (customer: Customer) => {
+    setEditingCustomer(customer)
+    setShowCustomerModal(true)
+  }
+
+  const handleDeleteCustomerClick = (customer: Customer) => {
+    setDeletingCustomer(customer)
+  }
+
+  const handleConfirmDeleteCustomer = async () => {
+    if (!deletingCustomer) return
+
+    setDeleteCustomerLoading(true)
+    try {
+      const response = await fetch(`/api/customers/${deletingCustomer.id}`, {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        alert(data.message || 'Failed to delete customer')
+        return
+      }
+
+      await fetchCustomers()
+      setDeletingCustomer(null)
+    } catch (error) {
+      console.error('Failed to delete customer:', error)
+      alert('Failed to delete customer')
+    } finally {
+      setDeleteCustomerLoading(false)
+    }
+  }
+
+  const handleCloseCustomerModal = () => {
+    setShowCustomerModal(false)
+    setEditingCustomer(null)
+  }
+
+  /* ========== PRIORITIES HANDLERS ========== */
+
+  const fetchPriorities = async () => {
+    setPriorityLoading(true)
+    try {
+      const response = await fetch('/api/priorities')
+      const data = await response.json()
+
+      if (data.success) {
+        setPriorities(data.data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch priorities:', error)
+    } finally {
+      setPriorityLoading(false)
+    }
+  }
+
+  const handleSavePriority = async (formData: { name: string }) => {
+    const isEdit = !!editingPriority
+    const url = isEdit ? `/api/priorities/${editingPriority.id}` : '/api/priorities'
+    const method = isEdit ? 'PUT' : 'POST'
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    })
+
+    const data = await response.json()
+
+    if (!data.success) {
+      throw new Error(data.message || `Failed to ${isEdit ? 'update' : 'create'} priority`)
+    }
+
+    await fetchPriorities()
+    setEditingPriority(null)
+  }
+
+  const handleEditPriority = (priority: Priority) => {
+    setEditingPriority(priority)
+    setShowPriorityModal(true)
+  }
+
+  const handleDeletePriorityClick = (priority: Priority) => {
+    setDeletingPriority(priority)
+  }
+
+  const handleConfirmDeletePriority = async () => {
+    if (!deletingPriority) return
+
+    setDeletePriorityLoading(true)
+    try {
+      const response = await fetch(`/api/priorities/${deletingPriority.id}`, {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        alert(data.message || 'Failed to delete priority')
+        return
+      }
+
+      await fetchPriorities()
+      setDeletingPriority(null)
+    } catch (error) {
+      console.error('Failed to delete priority:', error)
+      alert('Failed to delete priority')
+    } finally {
+      setDeletePriorityLoading(false)
+    }
+  }
+
+  const handleClosePriorityModal = () => {
+    setShowPriorityModal(false)
+    setEditingPriority(null)
+  }
+
+  /* ========== LOAD DATA ON TAB CHANGE ========== */
+
   useEffect(() => {
     if (activeTab === 'roles') {
       fetchRoles()
@@ -332,9 +490,12 @@ export default function SettingsPage() {
       fetchPermissions()
     } else if (activeTab === 'assignments') {
       fetchAssignments()
-      /* Also load roles and permissions for dropdowns */
       fetchRoles()
       fetchPermissions()
+    } else if (activeTab === 'customers') {
+      fetchCustomers()
+    } else if (activeTab === 'priorities') {
+      fetchPriorities()
     }
   }, [activeTab])
 
@@ -345,7 +506,7 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">Settings</h1>
-            <p className="text-sm text-gray-500 mt-4">Manage roles, permissions and access control</p>
+            <p className="text-sm text-gray-500 mt-1">Manage roles, permissions, access control and master data</p>
           </div>
         </div>
 
@@ -355,7 +516,7 @@ export default function SettingsPage() {
         {/* Content */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           {activeTab === 'roles' && (
-            <RolesTab 
+            <RolesTab
               roles={roles}
               loading={loading}
               onCreateRole={() => setShowRoleModal(true)}
@@ -364,7 +525,7 @@ export default function SettingsPage() {
             />
           )}
           {activeTab === 'permissions' && (
-            <PermissionsTab 
+            <PermissionsTab
               permissions={permissions}
               loading={permissionLoading}
               onCreatePermission={() => setShowPermissionModal(true)}
@@ -373,12 +534,30 @@ export default function SettingsPage() {
             />
           )}
           {activeTab === 'assignments' && (
-            <AssignmentsTab 
+            <AssignmentsTab
               assignments={assignments}
               loading={assignmentLoading}
               onAssignPermission={() => setShowAssignModal(true)}
               onEditAssignment={handleEditAssignment}
               onDeleteAssignment={handleDeleteAssignmentClick}
+            />
+          )}
+          {activeTab === 'customers' && (
+            <CustomersTab
+              customers={customers}
+              loading={customerLoading}
+              onCreateCustomer={() => setShowCustomerModal(true)}
+              onEditCustomer={handleEditCustomer}
+              onDeleteCustomer={handleDeleteCustomerClick}
+            />
+          )}
+          {activeTab === 'priorities' && (
+            <PrioritiesTab
+              priorities={priorities}
+              loading={priorityLoading}
+              onCreatePriority={() => setShowPriorityModal(true)}
+              onEditPriority={handleEditPriority}
+              onDeletePriority={handleDeletePriorityClick}
             />
           )}
         </div>
@@ -422,6 +601,29 @@ export default function SettingsPage() {
           roles={roles}
           permissions={permissions}
         />
+        <SettingsModal
+          isOpen={showCustomerModal}
+          onClose={handleCloseCustomerModal}
+          title={editingCustomer ? 'Edit Customer' : 'Create Customer'}
+          type="customer"
+          onSubmit={handleSaveCustomer}
+          initialData={editingCustomer ? {
+            id: editingCustomer.id,
+            name: editingCustomer.name,
+            code: editingCustomer.code
+          } : undefined}
+        />
+        <SettingsModal
+          isOpen={showPriorityModal}
+          onClose={handleClosePriorityModal}
+          title={editingPriority ? 'Edit Priority' : 'Create Priority'}
+          type="priority"
+          onSubmit={handleSavePriority}
+          initialData={editingPriority ? {
+            id: editingPriority.id,
+            name: editingPriority.name
+          } : undefined}
+        />
 
         {/* Delete Confirmation Modals */}
         <ConfirmModal
@@ -434,7 +636,6 @@ export default function SettingsPage() {
           cancelText="Cancel"
           isLoading={deleteLoading}
         />
-
         <ConfirmModal
           isOpen={!!deletingPermission}
           onClose={() => setDeletingPermission(null)}
@@ -445,7 +646,6 @@ export default function SettingsPage() {
           cancelText="Cancel"
           isLoading={deletePermissionLoading}
         />
-
         <ConfirmModal
           isOpen={!!deletingAssignment}
           onClose={() => setDeletingAssignment(null)}
@@ -456,9 +656,27 @@ export default function SettingsPage() {
           cancelText="Cancel"
           isLoading={deleteAssignmentLoading}
         />
+        <ConfirmModal
+          isOpen={!!deletingCustomer}
+          onClose={() => setDeletingCustomer(null)}
+          onConfirm={handleConfirmDeleteCustomer}
+          title="Delete Customer"
+          message={`Are you sure you want to delete "${deletingCustomer?.name}" (${deletingCustomer?.code})? This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          isLoading={deleteCustomerLoading}
+        />
+        <ConfirmModal
+          isOpen={!!deletingPriority}
+          onClose={() => setDeletingPriority(null)}
+          onConfirm={handleConfirmDeletePriority}
+          title="Delete Priority"
+          message={`Are you sure you want to delete "${deletingPriority?.name}"? This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          isLoading={deletePriorityLoading}
+        />
       </div>
     </DashboardLayout>
   )
 }
-
-

@@ -6,7 +6,7 @@ interface SettingsModalProps {
   isOpen: boolean
   onClose: () => void
   title: string
-  type: 'role' | 'permission' | 'assign'
+  type: 'role' | 'permission' | 'assign' | 'customer' | 'priority'
   onSubmit?: (data: any) => Promise<void>
   initialData?: { 
     id?: string
@@ -14,6 +14,8 @@ interface SettingsModalProps {
     description?: string | null
     role_id?: string
     permission_id?: string
+    code?: string
+    resolve_time?: number
   }
   roles?: Array<{ id: string; name: string }>
   permissions?: Array<{ id: string; name: string }>
@@ -29,7 +31,13 @@ export default function SettingsModal({
   roles = [],
   permissions = []
 }: SettingsModalProps) {
-  const [formData, setFormData] = useState({ name: '', description: '', role_id: '', permission_id: '' })
+  const [formData, setFormData] = useState({ 
+    name: '', 
+    description: '', 
+    role_id: '', 
+    permission_id: '',
+    code: ''
+  })
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -42,20 +50,36 @@ export default function SettingsModal({
           name: '',
           description: '',
           role_id: initialData.role_id || '',
-          permission_id: initialData.permission_id || ''
+          permission_id: initialData.permission_id || '',
+          code: ''
         })
         setSelectedPermissions(initialData.permission_id ? [initialData.permission_id] : [])
+      } else if (type === 'customer') {
+        setFormData({
+          name: initialData.name || '',
+          description: '',
+          role_id: '',
+          permission_id: '',
+          code: initialData.code || ''
+        })
       } else {
         setFormData({
           name: initialData.name || '',
           description: initialData.description || '',
           role_id: '',
-          permission_id: ''
+          permission_id: '',
+          code: ''
         })
         setSelectedPermissions([])
       }
     } else if (!isOpen) {
-      setFormData({ name: '', description: '', role_id: '', permission_id: '' })
+      setFormData({ 
+        name: '', 
+        description: '', 
+        role_id: '', 
+        permission_id: '',
+        code: ''
+      })
       setSelectedPermissions([])
       setError('')
     }
@@ -71,15 +95,32 @@ export default function SettingsModal({
     try {
       if (onSubmit) {
         if (type === 'assign') {
-          // ส่ง role_id และ permission_ids (array)
           await onSubmit({ 
             role_id: formData.role_id, 
             permission_ids: selectedPermissions 
           })
+        } else if (type === 'customer') {
+          if (formData.code.length > 4) {
+            setError('Code must not exceed 4 characters')
+            setLoading(false)
+            return
+          }
+          await onSubmit({ 
+            name: formData.name, 
+            code: formData.code.toUpperCase() 
+          })
+        } else if (type === 'priority') {
+          await onSubmit({ name: formData.name })
         } else {
           await onSubmit({ name: formData.name, description: formData.description })
         }
-        setFormData({ name: '', description: '', role_id: '', permission_id: '' })
+        setFormData({ 
+          name: '', 
+          description: '', 
+          role_id: '', 
+          permission_id: '',
+          code: ''
+        })
         setSelectedPermissions([])
         onClose()
       }
@@ -226,6 +267,57 @@ export default function SettingsModal({
                 )}
               </div>
             </>
+          ) : type === 'customer' ? (
+            /* Customer Form */
+            <>
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                  Customer Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
+                  placeholder="Enter customer name"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
+                  Code (Max 4 characters) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="code"
+                  required
+                  maxLength={4}
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent uppercase"
+                  placeholder="e.g., ABCD"
+                />
+                <p className="mt-1 text-xs text-gray-500">{formData.code.length}/4 characters</p>
+              </div>
+            </>
+          ) : type === 'priority' ? (
+            /* Priority Form */
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                Priority Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="name"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
+                placeholder="e.g., High, Medium, Low"
+              />
+            </div>
           ) : (
             /* Role/Permission Form */
             <>
@@ -271,7 +363,13 @@ export default function SettingsModal({
             </button>
             <button
               type="submit"
-              disabled={loading || (type === 'assign' ? (!formData.role_id || selectedPermissions.length === 0) : !formData.name)}
+              disabled={
+                loading || 
+                (type === 'assign' ? (!formData.role_id || selectedPermissions.length === 0) : 
+                 type === 'customer' ? (!formData.name || !formData.code) :
+                 type === 'priority' ? !formData.name :
+                 !formData.name)
+              }
               className="flex-1 px-4 py-2.5 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: '#6366F1' }}
               onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = '#5558E3')}
@@ -288,4 +386,3 @@ export default function SettingsModal({
     </div>
   )
 }
-
