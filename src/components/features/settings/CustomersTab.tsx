@@ -27,7 +27,7 @@ export default function CustomersTab({ customers, loading, onCreateCustomer, onE
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          <span>Create Customer</span>
+          <span style={{ cursor: 'pointer' }}>Create Customer</span>
         </button>
       </div>
 
@@ -82,6 +82,7 @@ export default function CustomersTab({ customers, loading, onCreateCustomer, onE
                     <button
                       onClick={() => onDeleteCustomer(customer)}
                       className="text-red-600 hover:text-red-800 transition-colors border border-red-600 rounded-lg px-2 py-1"
+                      style={{ cursor: 'pointer' }}
                     >
                       Delete
                     </button>

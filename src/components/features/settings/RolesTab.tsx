@@ -35,7 +35,7 @@ export default function RolesTab({ roles, loading, onCreateRole, onEditRole, onD
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          <span>Create Role</span>
+          <span style={{ cursor: 'pointer' }}>Create Role</span>
         </button>
       </div>
 
@@ -89,6 +89,7 @@ export default function RolesTab({ roles, loading, onCreateRole, onEditRole, onD
                     </button>
                     <button 
                       onClick={() => onDeleteRole(role)}
+                      style={{ cursor: 'pointer' }}
                       className="text-red-600 hover:text-red-800 transition-colors border border-red-600 rounded-lg px-2 py-1"
                     >
                       Delete

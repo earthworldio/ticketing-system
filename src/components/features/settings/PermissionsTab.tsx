@@ -41,7 +41,7 @@ export default function PermissionsTab({
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          <span>Create Permission</span>
+          <span style={{ cursor: 'pointer' }}>Create Permission</span>
         </button>
       </div>
 
@@ -95,6 +95,7 @@ export default function PermissionsTab({
                     </button>
                     <button 
                       onClick={() => onDeletePermission(permission)}
+                      style={{ cursor: 'pointer' }}
                       className="text-red-600 hover:text-red-800 transition-colors border border-red-600 rounded-lg px-2 py-1"
                     >
                       Delete

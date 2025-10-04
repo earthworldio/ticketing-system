@@ -33,7 +33,7 @@ export default function StatusTab({
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          <span>Create Status</span>
+          <span style={{cursor: 'pointer'}} >Create Status</span>
         </button>
       </div>
 
@@ -84,14 +84,15 @@ export default function StatusTab({
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
                     <button
                       onClick={() => onEditStatus(status)}
-                      className="text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
-                      style={{ backgroundColor: '#6366F1' }}
+                      className="text-[#6366F1] hover:text-[#5558E3] mr-4 transition-colors border border-[#6366F1] rounded-lg px-2 py-1"
+                      style={{ cursor: 'pointer' }}
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => onDeleteStatus(status.id)}
-                      className="text-white bg-red-600 px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors"
+                      className="text-red-600 hover:text-red-800 transition-colors border border-red-600 rounded-lg px-2 py-1"
+                      style={{ cursor: 'pointer' }}
                     >
                       Delete
                     </button>
