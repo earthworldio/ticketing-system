@@ -7,4 +7,5 @@ export * from './project.types';
 export * from './sla.types';
 export * from './projectSla.types';
 export * from './ticket.types';
+export * from './ticketFile.types';
 export * from './status.types';

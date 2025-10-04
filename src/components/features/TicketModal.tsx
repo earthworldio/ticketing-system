@@ -20,6 +20,7 @@ export default function TicketModal({
 }: TicketModalProps) {
   const [formData, setFormData] = useState({
     name: '',
+    description: '',
     status_id: '',
     sla_id: '',
     owner: ''
@@ -38,6 +39,7 @@ export default function TicketModal({
       if (initialData) {
         setFormData({
           name: initialData.name || '',
+          description: initialData.description || '',
           status_id: initialData.status_id || '',
           sla_id: initialData.sla_id || '',
           owner: initialData.owner || ''
@@ -51,6 +53,7 @@ export default function TicketModal({
     } else {
       setFormData({
         name: '',
+        description: '',
         status_id: '',
         sla_id: '',
         owner: ''
@@ -166,6 +169,20 @@ export default function TicketModal({
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
               placeholder="Enter ticket name"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+              Description
+            </label>
+            <textarea
+              id="description"
+              rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent resize-none"
+              placeholder="Enter ticket description (optional)"
             />
           </div>
 

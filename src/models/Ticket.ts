@@ -14,12 +14,22 @@ export class TicketModel {
         u_owner.first_name as owner_first_name,
         u_owner.last_name as owner_last_name,
         u_creator.first_name as creator_first_name,
-        u_creator.last_name as creator_last_name
+        u_creator.last_name as creator_last_name,
+        c.code as customer_code,
+        CONCAT(
+          c.code, 
+          '-', 
+          LPAD(CAST((EXTRACT(YEAR FROM t.created_date) + 543 - 2500) AS TEXT), 2, '0'),
+          LPAD(CAST(EXTRACT(MONTH FROM t.created_date) AS TEXT), 2, '0'),
+          LPAD(CAST(COALESCE(t.number, 0) AS TEXT), 4, '0')
+        ) as ticket_number
        FROM ticket t
        LEFT JOIN status s ON t.status_id = s.id
        LEFT JOIN sla ON t.sla_id = sla.id
        LEFT JOIN "user" u_owner ON t.owner = u_owner.id
        LEFT JOIN "user" u_creator ON t.created_by = u_creator.id
+       LEFT JOIN project proj ON t.project_id = proj.id
+       LEFT JOIN customer c ON proj.customer_id = c.id
        WHERE t.id = $1`,
       [id]
     )
@@ -43,18 +53,7 @@ export class TicketModel {
           '-', 
           LPAD(CAST((EXTRACT(YEAR FROM t.created_date) + 543 - 2500) AS TEXT), 2, '0'),
           LPAD(CAST(EXTRACT(MONTH FROM t.created_date) AS TEXT), 2, '0'),
-          LPAD(
-            CAST(
-              ROW_NUMBER() OVER (
-                PARTITION BY c.code, 
-                EXTRACT(YEAR FROM t.created_date), 
-                EXTRACT(MONTH FROM t.created_date) 
-                ORDER BY t.created_date
-              ) AS TEXT
-            ), 
-            4, 
-            '0'
-          )
+          LPAD(CAST(t.number AS TEXT), 4, '0')
         ) as ticket_number
        FROM ticket t
        LEFT JOIN status s ON t.status_id = s.id
@@ -64,7 +63,7 @@ export class TicketModel {
        LEFT JOIN project proj ON t.project_id = proj.id
        LEFT JOIN customer c ON proj.customer_id = c.id
        WHERE t.project_id = $1
-       ORDER BY t.created_date DESC`,
+       ORDER BY t.number ASC`,
       [project_id]
     )
     return result.rows
@@ -87,18 +86,7 @@ export class TicketModel {
           '-', 
           LPAD(CAST((EXTRACT(YEAR FROM t.created_date) + 543 - 2500) AS TEXT), 2, '0'),
           LPAD(CAST(EXTRACT(MONTH FROM t.created_date) AS TEXT), 2, '0'),
-          LPAD(
-            CAST(
-              ROW_NUMBER() OVER (
-                PARTITION BY c.code, 
-                EXTRACT(YEAR FROM t.created_date), 
-                EXTRACT(MONTH FROM t.created_date) 
-                ORDER BY t.created_date
-              ) AS TEXT
-            ), 
-            4, 
-            '0'
-          )
+          LPAD(CAST(t.number AS TEXT), 4, '0')
         ) as ticket_number
       FROM ticket t
       LEFT JOIN status s ON t.status_id = s.id
@@ -114,16 +102,33 @@ export class TicketModel {
 
   /* Create a new ticket */
   static async create(data: CreateTicketDTO): Promise<Ticket> {
+    // Get the next ticket number for this project's customer and month
+    const numberResult = await query(
+      `SELECT 
+        COALESCE(MAX(t.number), 0) + 1 as next_number
+       FROM ticket t
+       JOIN project p ON t.project_id = p.id
+       JOIN project p2 ON p2.id = $1
+       WHERE p.customer_id = p2.customer_id
+       AND EXTRACT(YEAR FROM t.created_date) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
+       AND EXTRACT(MONTH FROM t.created_date) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)`,
+      [data.project_id]
+    )
+    
+    const nextNumber = numberResult.rows[0]?.next_number || 1
+
     const result = await query(
-      `INSERT INTO ticket (project_id, status_id, sla_id, owner, name, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO ticket (project_id, number, status_id, sla_id, owner, name, description, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
       [
         data.project_id,
+        nextNumber,
         data.status_id || null,
         data.sla_id || null,
         data.owner || null,
         data.name,
+        data.description || null,
         data.created_by || null
       ]
     )
@@ -154,6 +159,11 @@ export class TicketModel {
     if (data.name !== undefined) {
       fields.push(`name = $${paramCount++}`)
       values.push(data.name)
+    }
+
+    if (data.description !== undefined) {
+      fields.push(`description = $${paramCount++}`)
+      values.push(data.description)
     }
 
     if (data.updated_by !== undefined) {

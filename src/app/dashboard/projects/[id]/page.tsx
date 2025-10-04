@@ -220,8 +220,7 @@ export default function ProjectDetailPage() {
 
         {/* Tickets Section */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Tickets</h2>
-          
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Tickets</h2>     
           {!hasPermission('ticket-read') ? (
             /* No Permission Message */
             <div className="flex flex-col items-center justify-center py-20 bg-white border border-gray-200 rounded-lg">
@@ -263,94 +262,91 @@ export default function ProjectDetailPage() {
           ) : (
             /* Tickets List */
             <div className="space-y-4">
-              {tickets.map((ticket, index) => {
-                const colors = ['#6366F1', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6', '#EC4899']
-
-                return (
-                  <div
-                    key={ticket.id}
-                    className="bg-white border-2 rounded-xl p-6 hover:shadow-lg transition-all relative"
-                    style={{ borderColor: '#E5E7EB' }}
-                  >
-                    {/* Status Badge - มุมขวาบน */}
-                    {ticket.status_name && (
-                      <div className="absolute top-4 right-4">
-                        
-                      </div>
-                    )}
-
-                    {/* Content */}
-                    <div className="flex gap-4">
-
-
-                      {/* Main Content */}
-                      <div className="flex-1">
-                        {/* Ticket Header */}
-                        <div className="mb-3">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1 gap-4">
-                            {ticket.ticket_number || ticket.id.substring(0, 8)} {ticket.name}
-                              <span className="ml-2 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                              {ticket.status_name}
-                              </span>
-
-                          </h3>
-                          <div className="text-sm text-gray-400">
-                            Created at {formatDate(ticket.created_date)}
-                          </div>
+              {tickets.map((ticket) => (
+                <div
+                  key={ticket.id}
+                  className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      {/* Ticket Header */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className='bg-[#6366F1] border border-[#6366F1] w-45 h-6 rounded-sm flex items-center justify-center text-xs font-semibold'>
+                          <span className="text-lg font-semibold" style={{ color: 'white' }}>
+                            {ticket.ticket_number || `#${ticket.id.substring(0, 8)}`}
+                          </span>
                         </div>
 
-                        {/* Ticket Meta */}
-                        {ticket.owner_first_name && (
-                          <div className="mb-4 text-sm text-gray-600">
-                            <span className="font-medium">Assigned to:</span> {ticket.owner_first_name} {ticket.owner_last_name}
+                        <span className="text-lg font-medium" style={{ color: 'black' }}>
+                          {ticket.name}
+                        </span>
+                        {ticket.status_name && (
+                          <>
+                            <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                              {ticket.status_name}
+                            </span>
+                          </>
+                        )}
+
+                        
+                      </div>
+
+                      {/* Ticket Description */}
+                      {ticket.description && (
+                        <p className="text-sm text-gray-600 mt-1 mb-2">
+                          {ticket.description}
+                        </p>
+                      )}
+
+                      {ticket.owner_name && (
+                        <p className="text-sm text-gray-600 mt-1 mb-2">
+                          {ticket.owner_name}
+                        </p>
+                      )}
+
+                    
+                      <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-4">
+                        {/* Creator Info */}
+                        {ticket.creator_first_name ? (
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold"
+                              style={{ backgroundColor: '#6366F1' }}
+                            >
+                              {ticket.creator_first_name.charAt(0)}
+                              {ticket.creator_last_name?.charAt(0) || ''}
+                            </div>
+                            <span className="text-sm text-gray-700">
+                              {ticket.creator_first_name} {ticket.creator_last_name}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold"
+                              style={{ backgroundColor: '#6366F1' }}
+                            >
+                              ?
+                            </div>
+                            <span className="text-sm text-gray-500">Unknown</span>
                           </div>
                         )}
 
-                        {/* Footer - Creator Info and Actions */}
-                        <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                          {/* Creator Avatar & Name */}
-                          {ticket.creator_first_name ? (
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold"
-                                style={{ backgroundColor: '#6366F1' }}
-                              >
-                                {ticket.creator_first_name.charAt(0)}
-                                {ticket.creator_last_name?.charAt(0) || ''}
-                              </div>
-                              <span className="text-sm text-gray-700">
-                                {ticket.creator_first_name} {ticket.creator_last_name}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold"
-                                style={{ backgroundColor: '#6366F1' }}
-                              >
-                                ?
-                              </div>
-                              <span className="text-sm text-gray-500">Unknown</span>
-                            </div>
-                          )}
-
-                          {/* Action Buttons */}
-                          <div className="flex items-center gap-3">
-                            <button
-                              className="text-sm font-medium transition-colors"
-                              style={{ color: '#6366F1' }}
-                              onMouseEnter={(e) => (e.currentTarget.style.color = '#5558E3')}
-                              onMouseLeave={(e) => (e.currentTarget.style.color = '#6366F1')}
-                            >
-                              Open Ticket
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                        {/* Open Ticket Button */}
+                        <button 
+                          onClick={() => router.push(`/dashboard/tickets/${ticket.id}`)}
+                          className="text-sm font-medium transition-colors"
+                          style={{ color: '#6366F1', cursor: 'pointer', textDecoration: 'underline' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = '#5558E3')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = '#6366F1')}
+                        >
+                          Open Ticket
+                        </button>
+                      </div> 
                     </div>
                   </div>
-                )
-              })}
+                </div>
+              ))}
             </div>
           )}
         </div>
