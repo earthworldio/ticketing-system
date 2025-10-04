@@ -18,8 +18,10 @@ export default function TicketDetailPage({ params }: PageProps) {
   const [users, setUsers] = useState<User[]>([])
   const [showAssignModal, setShowAssignModal] = useState(false)
   const [showFileModal, setShowFileModal] = useState(false)
+  const [showDescriptionModal, setShowDescriptionModal] = useState(false)
   const [assignLoading, setAssignLoading] = useState(false)
   const [selectedOwner, setSelectedOwner] = useState('')
+  const [editedDescription, setEditedDescription] = useState('')
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -43,6 +45,7 @@ export default function TicketDetailPage({ params }: PageProps) {
       if (data.success) {
         setTicket(data.data)
         setSelectedOwner(data.data.owner || '')
+        setEditedDescription(data.data.description || '')
       }
     } catch (error) {
       console.error('Failed to fetch ticket:', error)
@@ -105,6 +108,30 @@ export default function TicketDetailPage({ params }: PageProps) {
     }
   }
 
+  const handleUpdateDescription = async () => {
+    try {
+      const userData = JSON.parse(localStorage.getItem('user') || '{}')
+      const response = await fetch(`/api/tickets/${resolvedParams.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          description: editedDescription,
+          updated_by: userData.id
+        }),
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        setShowDescriptionModal(false)
+        fetchTicketDetail()
+      }
+    } catch (error) {
+      console.error('Failed to update description:', error)
+    }
+  }
+
   const handleFileUpload = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const form = e.currentTarget
@@ -129,7 +156,6 @@ export default function TicketDetailPage({ params }: PageProps) {
         throw new Error(uploadData.message || 'Failed to upload file')
       }
 
-      // Step 2: Save file info to database
       const userData = JSON.parse(localStorage.getItem('user') || '{}')
       const response = await fetch('/api/ticket-files', {
         method: 'POST',
@@ -236,18 +262,34 @@ export default function TicketDetailPage({ params }: PageProps) {
             </div>
           </div>
           <p className="text-xs text-gray-500  mb-3" >This ticket was created at : {formatDate(ticket.created_date)}</p>
-          <div>
-          <h3 className="mt-3text-base font-semibold text-gray-900 mb-3">Ticket description</h3>
-          <p className="text-sm text-gray-600 leading-relaxed mb-4">
-            {ticket.description || 'No description provided.'}
-          </p>
-          </div>
+           <div>
+           
+           <div className='flex items-end justify-between mb-3'>
+             <h3 className="mt-5 text-base font-semibold text-gray-900">Ticket description</h3>
+             <button
+               onClick={() => {
+                 setEditedDescription(ticket.description || '')
+                 setShowDescriptionModal(true)
+               }}
+               className="px-4 py-1.25 bg-[#6366F1] text-white rounded-lg hover:bg-[#5558E3] transition-colors font-medium text-sm"
+             >
+               Edit Description
+             </button>
+           </div>
 
-        </div>
-
-        {/* Assign to */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Assign to</h3>
+           <p className="text-sm text-gray-600 leading-relaxed mb-4">
+             {ticket.description || 'Please add a description for this ticket'}
+           </p>
+           
+           <div className='flex items-end justify-between mb-3'>
+             <h3 className="mt-5 text-base font-semibold text-gray-900">Assign to</h3>
+             <button
+               onClick={() => setShowAssignModal(true)}
+               className="px-4 py-1.25 bg-[#6366F1] text-white rounded-lg hover:bg-[#5558E3] transition-colors font-medium text-sm"
+             >
+               Assign ticket
+             </button>
+           </div>
           {ticket.owner ? (
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
@@ -262,14 +304,21 @@ export default function TicketDetailPage({ params }: PageProps) {
               </div>
             </div>
           ) : (
-            <p className="text-gray-500 text-sm">Not assigned yet</p>
+            <p className="text-gray-500 text-sm">Please assign this ticket to a user</p>
           )}
-        </div>
+          </div>
 
-        {/* Files */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">File</h3>      
-          {files.length > 0 ? (
+           <div className='flex items-end justify-between mb-3'>
+             <h3 className="mt-5 text-base font-semibold text-gray-900">Files</h3>
+             <button
+               onClick={() => setShowFileModal(true)}
+               className="px-4 py-1.25 bg-[#6366F1] text-white rounded-lg hover:bg-[#5558E3] transition-colors font-medium text-sm"
+             >
+               Add File
+             </button>
+           </div>
+           
+           {files.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {files.map((file) => (
                 <a
@@ -298,6 +347,40 @@ export default function TicketDetailPage({ params }: PageProps) {
           )}
         </div>
       </div>
+
+      {/* Description Modal */}
+      {showDescriptionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowDescriptionModal(false)} />
+          <div className="relative bg-white rounded-xl shadow-xl max-w-2xl w-full p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Edit Description</h3>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+              <textarea
+                value={editedDescription}
+                onChange={(e) => setEditedDescription(e.target.value)}
+                rows={6}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent resize-none"
+                placeholder="Enter ticket description..."
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDescriptionModal(false)}
+                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateDescription}
+                className="flex-1 px-4 py-2.5 bg-[#6366F1] text-white rounded-lg hover:bg-[#5558E3] transition-colors font-medium"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Assign Modal */}
       {showAssignModal && (
