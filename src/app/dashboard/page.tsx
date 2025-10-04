@@ -244,9 +244,12 @@ export default function DashboardPage() {
                   <div className="flex-1">
                     {/* Project Header */}
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-lg font-semibold" style={{ color: '#6366F1' }}>
-                        {project.customer_code}
-                      </span>
+                      <div className='bg-[#6366F1] border border-[#6366F1] w-25 h-6 rounded-sm flex items-center justify-center text-xs font-semibold'>
+                        <span className="text-lg font-semibold" style={{ color: 'white' }}>
+                          {project.customer_code}
+                        </span>
+                      </div>
+
                       <span className="text-lg font-medium" style={{ color: 'black' }}>
                         {project.name}
                       </span>
@@ -266,9 +269,6 @@ export default function DashboardPage() {
                     
 
                     {/* Project Description */}
-                    <span className="text-sm font-medium " style={{ color: 'black' }}>
-                        description 
-                    </span>
                     {project.description && (
                       <p className="text-sm text-gray-600 mt-1 mb-2">
                         {project.description}
@@ -307,7 +307,7 @@ export default function DashboardPage() {
                         <button 
                           onClick={() => router.push(`/dashboard/projects/${project.id}`)}
                           className="text-sm font-medium transition-colors"
-                          style={{ color: '#6366F1' }}
+                          style={{ color: '#6366F1'  , cursor: 'pointer' , textDecoration: 'underline'}}
                           onMouseEnter={(e) => (e.currentTarget.style.color = '#5558E3')}
                           onMouseLeave={(e) => (e.currentTarget.style.color = '#6366F1')}
                         >

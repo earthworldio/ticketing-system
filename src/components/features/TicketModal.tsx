@@ -1,14 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Priority, User, TicketWithRelations } from '@/types'
+import { User, TicketWithRelations } from '@/types'
 
 interface TicketModalProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (data: any) => Promise<void>
   initialData?: TicketWithRelations | null
-  priorities: Priority[]
   users: User[]
 }
 
@@ -17,41 +16,48 @@ export default function TicketModal({
   onClose,
   onSubmit,
   initialData,
-  priorities,
   users
 }: TicketModalProps) {
   const [formData, setFormData] = useState({
     name: '',
-    priority_id: '',
     status_id: '',
+    sla_id: '',
     owner: ''
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [statuses, setStatuses] = useState<any[]>([])
+  const [slas, setSlas] = useState<any[]>([])
+  const [openStatusId, setOpenStatusId] = useState<string>('')
 
   useEffect(() => {
     if (isOpen) {
       fetchStatuses()
+      fetchProjectSLAs()
       
       if (initialData) {
         setFormData({
           name: initialData.name || '',
-          priority_id: initialData.priority_id || '',
           status_id: initialData.status_id || '',
+          sla_id: initialData.sla_id || '',
           owner: initialData.owner || ''
         })
+      } else {
+        // For new ticket, set status to "Open" automatically
+        if (openStatusId) {
+          setFormData(prev => ({ ...prev, status_id: openStatusId }))
+        }
       }
     } else {
       setFormData({
         name: '',
-        priority_id: '',
         status_id: '',
+        sla_id: '',
         owner: ''
       })
       setError('')
     }
-  }, [isOpen, initialData])
+  }, [isOpen, initialData, openStatusId])
 
   const fetchStatuses = async () => {
     try {
@@ -59,9 +65,30 @@ export default function TicketModal({
       const data = await response.json()
       if (data.success) {
         setStatuses(data.data)
+        // Find "Open" status
+        const openStatus = data.data.find((s: any) => s.name.toLowerCase() === 'open')
+        if (openStatus) {
+          setOpenStatusId(openStatus.id)
+        }
       }
     } catch (error) {
       console.error('Failed to fetch statuses:', error)
+    }
+  }
+
+  const fetchProjectSLAs = async () => {
+    try {
+      // Get project_id from localStorage
+      const projectId = localStorage.getItem('current_project_id')
+      if (!projectId) return
+
+      const response = await fetch(`/api/project-sla?project_id=${projectId}`)
+      const data = await response.json()
+      if (data.success) {
+        setSlas(data.data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch project SLAs:', error)
     }
   }
 
@@ -144,38 +171,39 @@ export default function TicketModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-2">
-                Priority
+              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                Status <span className="text-red-500">*</span>
               </label>
               <select
-                id="priority"
-                value={formData.priority_id}
-                onChange={(e) => setFormData({ ...formData, priority_id: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
+                id="status"
+                value={formData.status_id}
+                onChange={(e) => setFormData({ ...formData, status_id: e.target.value })}
+                disabled={!initialData}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
               >
-                <option value="">Select priority</option>
-                {priorities.map((priority) => (
-                  <option key={priority.id} value={priority.id}>
-                    {priority.name}
+                <option value="">Select status</option>
+                {statuses.map((status) => (
+                  <option key={status.id} value={status.id}>
+                    {status.name}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                Status
+              <label htmlFor="sla" className="block text-sm font-medium text-gray-700 mb-2">
+                SLA
               </label>
               <select
-                id="status"
-                value={formData.status_id}
-                onChange={(e) => setFormData({ ...formData, status_id: e.target.value })}
+                id="sla"
+                value={formData.sla_id}
+                onChange={(e) => setFormData({ ...formData, sla_id: e.target.value })}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
               >
-                <option value="">Select status</option>
-                {statuses.map((status) => (
-                  <option key={status.id} value={status.id}>
-                    {status.name}
+                <option value="">Select SLA</option>
+                {slas.map((sla) => (
+                  <option key={sla.sla_id} value={sla.sla_id}>
+                    {sla.sla_name} ({sla.sla_resolve_time} mins)
                   </option>
                 ))}
               </select>

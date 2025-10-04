@@ -266,15 +266,15 @@ export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModal
               {/* Code */}
               <div>
                 <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
-                  Code
+                  Contact Code
                 </label>
                 <input
                   type="text"
                   id="code"
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent uppercase"
-                  placeholder="CODE"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
+                  placeholder="Contact code"
                   maxLength={10}
                 />
               </div>
@@ -357,7 +357,8 @@ export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModal
                 <button
                   type="button"
                   onClick={addSLAInput}
-                  className="flex items-center gap-1 px-3 py-1 text-sm font-medium text-[#6366F1] hover:bg-[#6366F1]/10 rounded-lg transition-colors"
+                  className="border border-[#6366F1] text-[#6366F1] hover:text-[#5558E3] mr-4 transition-colors flex items-center gap-1 px-3 py-1 text-sm font-medium hover:bg-[#6366F1]/10 rounded-lg transition-colors"
+                  style={{ cursor: 'pointer' }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -368,7 +369,7 @@ export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModal
               
               <div className="space-y-3">
                 {slaInputs.map((sla, index) => (
-                  <div key={sla.id} className="flex gap-2 items-start p-3 border border-gray-200 rounded-lg bg-gray-50">
+                  <div key={sla.id} className="flex gap-2 items-start p-3 border border-gray-200 rounded-lg">
                     <div className="flex-1 space-y-2">
                       {/* SLA Name */}
                       <input
@@ -377,7 +378,7 @@ export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModal
                         value={sla.name}
                         onChange={(e) => updateSLAInput(sla.id, 'name', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent text-sm"
-                        placeholder="SLA Name (e.g., Critical Response)"
+                        placeholder="SLA Name ( Critical Response )"
                       />
                       
                       {/* Value and Unit */}
@@ -442,7 +443,7 @@ export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModal
               <button
                 type="submit"
                 disabled={loading || !formData.name || !formData.customer_id || slaInputs.every(sla => !sla.name || !sla.value)}
-                className="flex-1 px-4 py-2.5 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2.5 text-white rounded-lg font-medium transition-colors disabled:opacity-80 disabled:cursor-not-allowed"
                 style={{ backgroundColor: '#6366F1' }}
                 onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = '#5558E3')}
                 onMouseLeave={(e) => !loading && (e.currentTarget.style.backgroundColor = '#6366F1')}

@@ -11,14 +11,12 @@ export class ProjectSLAModel {
         ps.id,
         ps.project_id,
         ps.sla_id,
-        ps.created_date,
-        ps.updated_date,
         s.name as sla_name,
         s.resolve_time as sla_resolve_time
        FROM project_sla ps
        LEFT JOIN sla s ON ps.sla_id = s.id
        WHERE ps.project_id = $1
-       ORDER BY ps.created_date ASC`,
+       ORDER BY s.name ASC`,
       [project_id]
     )
     return result.rows
@@ -27,7 +25,7 @@ export class ProjectSLAModel {
   /* Find all projects for an SLA */
   static async findBySLAId(sla_id: string): Promise<ProjectSLA[]> {
     const result = await query(
-      'SELECT * FROM project_sla WHERE sla_id = $1 ORDER BY created_date DESC',
+      'SELECT * FROM project_sla WHERE sla_id = $1',
       [sla_id]
     )
     return result.rows

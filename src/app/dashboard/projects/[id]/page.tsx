@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/features/DashboardLayout'
 import TicketModal from '@/components/features/TicketModal'
 import ConfirmModal from '@/components/features/settings/ConfirmModal'
 import Image from 'next/image'
-import { TicketWithRelations, ProjectWithRelations, Priority, User } from '@/types'
+import { TicketWithRelations, ProjectWithRelations, User } from '@/types'
 import { usePermission } from '@/hooks/usePermission'
 
 export default function ProjectDetailPage() {
@@ -24,7 +24,6 @@ export default function ProjectDetailPage() {
   const [deletingTicketId, setDeletingTicketId] = useState<string | null>(null)
   
   /* Master data for dropdowns */
-  const [priorities, setPriorities] = useState<Priority[]>([])
   const [users, setUsers] = useState<User[]>([])
 
   useEffect(() => {
@@ -80,17 +79,9 @@ export default function ProjectDetailPage() {
   /* Fetch master data */
   const fetchMasterData = async () => {
     try {
-      const [prioritiesRes, usersRes] = await Promise.all([
-        fetch('/api/priorities'),
-        fetch('/api/admin/users')
-      ])
+      const usersRes = await fetch('/api/admin/users')
+      const usersData = await usersRes.json()
 
-      const [prioritiesData, usersData] = await Promise.all([
-        prioritiesRes.json(),
-        usersRes.json()
-      ])
-
-      if (prioritiesData.success) setPriorities(prioritiesData.data)
       if (usersData.success) setUsers(usersData.data)
     } catch (error) {
       console.error('Failed to fetch master data:', error)
@@ -274,7 +265,6 @@ export default function ProjectDetailPage() {
             <div className="space-y-4">
               {tickets.map((ticket, index) => {
                 const colors = ['#6366F1', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6', '#EC4899']
-                const circleColor = colors[index % colors.length]
 
                 return (
                   <div
@@ -297,16 +287,12 @@ export default function ProjectDetailPage() {
                       <div className="flex-1">
                         {/* Ticket Header */}
                         <div className="mb-3">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1 gap-2">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1 gap-4">
                             {ticket.ticket_number || ticket.id.substring(0, 8)} {ticket.name}
-                            {ticket.priority_name && (
-                              <span className="mr-3 ml-3 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                                {ticket.priority_name}
+                              <span className="ml-2 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                              {ticket.status_name}
                               </span>
-                            )}
-                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                             {ticket.status_name}
-                            </span>
+
                           </h3>
                           <div className="text-sm text-gray-400">
                             Created at {formatDate(ticket.created_date)}
@@ -350,24 +336,6 @@ export default function ProjectDetailPage() {
 
                           {/* Action Buttons */}
                           <div className="flex items-center gap-3">
-                            {/* <button
-                              onClick={() => {
-                                setEditingTicket(ticket)
-                                setShowTicketModal(true)
-                              }}
-                              className="text-sm font-medium transition-colors"
-                              style={{ color: '#6366F1' }}
-                              onMouseEnter={(e) => (e.currentTarget.style.color = '#5558E3')}
-                              onMouseLeave={(e) => (e.currentTarget.style.color = '#6366F1')}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => setDeletingTicketId(ticket.id)}
-                              className="text-sm font-medium text-red-600 hover:text-red-800 transition-colors"
-                            >
-                              Delete
-                            </button> */}
                             <button
                               className="text-sm font-medium transition-colors"
                               style={{ color: '#6366F1' }}
@@ -397,7 +365,6 @@ export default function ProjectDetailPage() {
         }}
         onSubmit={handleSaveTicket}
         initialData={editingTicket}
-        priorities={priorities}
         users={users}
       />
 
