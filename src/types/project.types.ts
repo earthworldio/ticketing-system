@@ -6,7 +6,6 @@ export interface Project {
   code?: string | null;
   description?: string | null;
   customer_id: string;
-  sla_id?: string | null;
   start_date?: Date | string | null;
   end_date?: Date | string | null;
   created_date: Date;
@@ -18,7 +17,6 @@ export interface Project {
 export interface ProjectWithRelations extends Project {
   customer_name?: string;
   customer_code?: string;
-  sla_resolve_time?: number; /* from joined SLA table */
 }
 
 export interface CreateProjectDTO {
@@ -26,7 +24,6 @@ export interface CreateProjectDTO {
   code?: string;
   description?: string;
   customer_id: string;
-  sla_id: string;  /* Reference to SLA table */
   start_date?: string;
   end_date?: string;
   created_by?: string; /* User ID who created the project */
@@ -37,7 +34,6 @@ export interface UpdateProjectDTO {
   code?: string;
   description?: string;
   customer_id?: string;
-  sla_id?: string;
   start_date?: string;
   end_date?: string;
   updated_by?: string; /* User ID who updated the project */

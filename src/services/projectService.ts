@@ -18,7 +18,7 @@ export class ProjectService {
 
   /* Create a new project */
   static async createProject(data: CreateProjectDTO): Promise<Project> {
-    // Validate required fields
+
     if (!data.name) {
       throw new Error('Project name is required')
     }
@@ -27,21 +27,12 @@ export class ProjectService {
       throw new Error('Customer is required')
     }
 
-    if (!data.sla_id) {
-      throw new Error('SLA is required')
-    }
-
     /* Validate customer exists */
     const customer = await CustomerModel.findById(data.customer_id)
     if (!customer) {
       throw new Error('Customer not found')
     }
 
-    /* Validate SLA exists */
-    const slaResult = await query('SELECT * FROM sla WHERE id = $1', [data.sla_id])
-    if (slaResult.rows.length === 0) {
-      throw new Error('SLA not found')
-    }
 
     /* Validate dates if provided */
     if (data.start_date && data.end_date) {
@@ -68,14 +59,6 @@ export class ProjectService {
       const customer = await CustomerModel.findById(data.customer_id)
       if (!customer) {
         throw new Error('Customer not found')
-      }
-    }
-
-    /* Validate SLA if updating */
-    if (data.sla_id) {
-      const slaResult = await query('SELECT * FROM sla WHERE id = $1', [data.sla_id])
-      if (slaResult.rows.length === 0) {
-        throw new Error('SLA not found')
       }
     }
 

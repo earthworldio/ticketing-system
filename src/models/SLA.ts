@@ -22,21 +22,38 @@ export class SLAModel {
   /* Create a new SLA */
   static async create(data: CreateSLADTO): Promise<SLA> {
     const result = await query(
-      `INSERT INTO sla (resolve_time)
-       VALUES ($1)
+      `INSERT INTO sla (name, resolve_time)
+       VALUES ($1, $2)
        RETURNING *`,
-      [data.resolve_time]
+      [data.name, data.resolve_time]
     )
     return result.rows[0]
   }
 
   /* Update SLA */
   static async update(id: string, data: UpdateSLADTO): Promise<SLA | null> {
-    if (data.resolve_time === undefined) return null
+    const fields: string[] = []
+    const values: any[] = []
+    let paramCount = 1
+
+    if (data.name !== undefined) {
+      fields.push(`name = $${paramCount++}`)
+      values.push(data.name)
+    }
+
+    if (data.resolve_time !== undefined) {
+      fields.push(`resolve_time = $${paramCount++}`)
+      values.push(data.resolve_time)
+    }
+
+    if (fields.length === 0) return null
+
+    fields.push(`updated_date = now()`)
+    values.push(id)
 
     const result = await query(
-      `UPDATE sla SET resolve_time = $1 WHERE id = $2 RETURNING *`,
-      [data.resolve_time, id]
+      `UPDATE sla SET ${fields.join(', ')} WHERE id = $${paramCount} RETURNING *`,
+      values
     )
     return result.rows[0] || null
   }

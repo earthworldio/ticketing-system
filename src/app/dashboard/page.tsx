@@ -106,21 +106,6 @@ export default function DashboardPage() {
     })
   }
 
-  /* Format SLA */
-  const formatSLA = (minutes: number): string => {
-    if (minutes < 60) {
-      return `${minutes} Minutes`
-    } else if (minutes < 1440) {
-      const hours = Math.floor(minutes / 60)
-      return `${hours} Hours`
-    } else if (minutes < 43200) {
-      const days = Math.floor(minutes / 1440)
-      return `${days} Days`
-    } else {
-      const months = Math.floor(minutes / 43200)
-      return `${months} Months`
-    }
-  }
 
   if (loading) {
     return (
@@ -260,7 +245,7 @@ export default function DashboardPage() {
                     {/* Project Header */}
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-lg font-semibold" style={{ color: '#6366F1' }}>
-                        {project.code}
+                        {project.customer_code}
                       </span>
                       <span className="text-lg font-medium" style={{ color: 'black' }}>
                         {project.name}
@@ -276,13 +261,6 @@ export default function DashboardPage() {
                           <span className='text-sm font-medium text-gray-500'>End: {formatDate(project.end_date)}</span>
                         </>
                       )}
-                      <button className="flex items-center gap-2 px-6 text-[#2600FF]  rounded-sm bg-[#EFEDFF]">
-                      {project.sla_resolve_time && (
-                        <>
-                          <span>SLA: {formatSLA(Number(project.sla_resolve_time))}</span>
-                        </>
-                      )}
-                      </button>
                     </div>
 
                     

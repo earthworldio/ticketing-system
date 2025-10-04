@@ -9,6 +9,13 @@ interface ProjectModalProps {
   onSubmit: (data: any) => Promise<void>
 }
 
+interface SLAInput {
+  id: string
+  name: string
+  value: string
+  unit: 'minutes' | 'hours' | 'days' | 'months'
+}
+
 export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModalProps) {
   const [formData, setFormData] = useState({
     name: '',
@@ -16,10 +23,11 @@ export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModal
     description: '',
     customer_id: '',
     start_date: '',
-    end_date: '',
-    sla_value: '',
-    sla_unit: 'hours' as 'minutes' | 'hours' | 'days' | 'months'
+    end_date: ''
   })
+  const [slaInputs, setSlaInputs] = useState<SLAInput[]>([
+    { id: '1', name: '', value: '', unit: 'hours' }
+  ])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   
@@ -39,10 +47,9 @@ export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModal
         description: '',
         customer_id: '',
         start_date: '',
-        end_date: '',
-        sla_value: '',
-        sla_unit: 'hours'
+        end_date: ''
       })
+      setSlaInputs([{ id: '1', name: '', value: '', unit: 'hours' }])
       setError('')
     }
   }, [isOpen])
@@ -63,67 +70,133 @@ export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModal
     }
   }
 
+  const addSLAInput = () => {
+    setSlaInputs([
+      ...slaInputs,
+      { id: Date.now().toString(), name: '', value: '', unit: 'hours' }
+    ])
+  }
+
+  const removeSLAInput = (id: string) => {
+    if (slaInputs.length > 1) {
+      setSlaInputs(slaInputs.filter(sla => sla.id !== id))
+    }
+  }
+
+  const updateSLAInput = (id: string, field: keyof SLAInput, value: string) => {
+    setSlaInputs(slaInputs.map(sla => 
+      sla.id === id ? { ...sla, [field]: value } : sla
+    ))
+  }
+
+  const convertToMinutes = (value: number, unit: string): number => {
+    switch (unit) {
+      case 'hours':
+        return value * 60
+      case 'days':
+        return value * 1440
+      case 'months':
+        return value * 43200
+      default:
+        return value
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
     try {
-      // Convert SLA to minutes
-      const value = parseFloat(formData.sla_value)
-      let minutes = value
-
-      switch (formData.sla_unit) {
-        case 'hours':
-          minutes = value * 60
-          break
-        case 'days':
-          minutes = value * 1440
-          break
-        case 'months':
-          minutes = value * 43200
-          break
+      // Validate SLA inputs
+      const validSLAs = slaInputs.filter(sla => sla.name.trim() && sla.value.trim())
+      
+      if (validSLAs.length === 0) {
+        throw new Error('Please add at least one SLA')
       }
 
-      // Step 1: Create SLA record first
-      const slaResponse = await fetch('/api/sla', {
+      // Step 1: Create all SLA records
+      const slaIds: string[] = []
+      
+      for (const sla of validSLAs) {
+        const minutes = convertToMinutes(parseFloat(sla.value), sla.unit)
+        
+        const slaResponse = await fetch('/api/sla', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: sla.name,
+            resolve_time: minutes
+          }),
+        })
+
+        const slaData = await slaResponse.json()
+
+        if (!slaData.success) {
+          throw new Error(slaData.message || 'Failed to create SLA')
+        }
+
+        slaIds.push(slaData.data.id)
+      }
+
+      // Step 2: Create project (without sla_id since we're using junction table)
+      const token = localStorage.getItem('token')
+      const projectResponse = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          code: formData.code || null,
+          description: formData.description || null,
+          customer_id: formData.customer_id,
+          start_date: formData.start_date || null,
+          end_date: formData.end_date || null
+        }),
+      })
+
+      const projectData = await projectResponse.json()
+
+      if (!projectData.success) {
+        throw new Error(projectData.message || 'Failed to create project')
+      }
+
+      // Step 3: Assign SLAs to project via junction table
+      const assignResponse = await fetch('/api/project-sla', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          resolve_time: minutes
+          project_id: projectData.data.id,
+          sla_ids: slaIds
         }),
       })
 
-      const slaData = await slaResponse.json()
+      const assignData = await assignResponse.json()
 
-      if (!slaData.success) {
-        throw new Error(slaData.message || 'Failed to create SLA')
+      if (!assignData.success) {
+        throw new Error(assignData.message || 'Failed to assign SLAs')
       }
 
-      // Step 2: Create project with sla_id
-      await onSubmit({
-        name: formData.name,
-        code: formData.code || null,
-        description: formData.description || null,
-        customer_id: formData.customer_id,
-        sla_id: slaData.data.id, // Use the created SLA's ID
-        start_date: formData.start_date || null,
-        end_date: formData.end_date || null
-      })
-
+      // Reset form
       setFormData({
         name: '',
         code: '',
         description: '',
         customer_id: '',
         start_date: '',
-        end_date: '',
-        sla_value: '',
-        sla_unit: 'hours'
+        end_date: ''
       })
+      setSlaInputs([{ id: '1', name: '', value: '', unit: 'hours' }])
       onClose()
+      
+      // Refresh the page to show new project
+      window.location.reload()
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
     } finally {
@@ -275,44 +348,86 @@ export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModal
               </div>
             </div>
 
-            {/* SLA (Service Level Agreement) */}
+            {/* SLA (Service Level Agreement) - Multiple */}
             <div>
-              <label htmlFor="sla" className="block text-sm font-medium text-gray-700 mb-2">
-                SLA - Resolve Time <span className="text-red-500">*</span>
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  id="sla"
-                  required
-                  min="1"
-                  step="1"
-                  value={formData.sla_value}
-                  onChange={(e) => setFormData({ ...formData, sla_value: e.target.value })}
-                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
-                  placeholder="Enter value"
-                />
-                <select
-                  value={formData.sla_unit}
-                  onChange={(e) => setFormData({ ...formData, sla_unit: e.target.value as any })}
-                  className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  SLA - Resolve Time <span className="text-red-500">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={addSLAInput}
+                  className="flex items-center gap-1 px-3 py-1 text-sm font-medium text-[#6366F1] hover:bg-[#6366F1]/10 rounded-lg transition-colors"
                 >
-                  <option value="minutes">Minutes</option>
-                  <option value="hours">Hours</option>
-                  <option value="days">Days</option>
-                  <option value="months">Months</option>
-                </select>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add SLA
+                </button>
               </div>
-              {formData.sla_value && (
-                <p className="mt-2 text-sm text-gray-600">
-                  = {
-                    formData.sla_unit === 'hours' ? parseFloat(formData.sla_value) * 60 :
-                    formData.sla_unit === 'days' ? parseFloat(formData.sla_value) * 1440 :
-                    formData.sla_unit === 'months' ? parseFloat(formData.sla_value) * 43200 :
-                    parseFloat(formData.sla_value)
-                  } minutes
-                </p>
-              )}
+              
+              <div className="space-y-3">
+                {slaInputs.map((sla, index) => (
+                  <div key={sla.id} className="flex gap-2 items-start p-3 border border-gray-200 rounded-lg bg-gray-50">
+                    <div className="flex-1 space-y-2">
+                      {/* SLA Name */}
+                      <input
+                        type="text"
+                        required
+                        value={sla.name}
+                        onChange={(e) => updateSLAInput(sla.id, 'name', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent text-sm"
+                        placeholder="SLA Name (e.g., Critical Response)"
+                      />
+                      
+                      {/* Value and Unit */}
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          required
+                          min="1"
+                          step="1"
+                          value={sla.value}
+                          onChange={(e) => updateSLAInput(sla.id, 'value', e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent text-sm"
+                          placeholder="Value"
+                        />
+                        <select
+                          value={sla.unit}
+                          onChange={(e) => updateSLAInput(sla.id, 'unit', e.target.value as any)}
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent text-sm"
+                        >
+                          <option value="minutes">Minutes</option>
+                          <option value="hours">Hours</option>
+                          <option value="days">Days</option>
+                          <option value="months">Months</option>
+                        </select>
+                      </div>
+                      
+                      {/* Show minutes conversion */}
+                      {sla.value && (
+                        <p className="text-xs text-gray-600">
+                          = {convertToMinutes(parseFloat(sla.value), sla.unit)} minutes
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Remove button */}
+                    {slaInputs.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeSLAInput(sla.id)}
+                        className="mt-1 text-red-500 hover:text-red-700 transition-colors"
+                        title="Remove SLA"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Actions */}
@@ -326,7 +441,7 @@ export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModal
               </button>
               <button
                 type="submit"
-                disabled={loading || !formData.name || !formData.customer_id || !formData.sla_value}
+                disabled={loading || !formData.name || !formData.customer_id || slaInputs.every(sla => !sla.name || !sla.value)}
                 className="flex-1 px-4 py-2.5 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ backgroundColor: '#6366F1' }}
                 onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = '#5558E3')}

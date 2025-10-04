@@ -10,11 +10,9 @@ export class ProjectModel {
       `SELECT 
         p.*,
         c.name as customer_name,
-        c.code as customer_code,
-        s.resolve_time as sla_resolve_time
+        c.code as customer_code
        FROM project p
        LEFT JOIN customer c ON p.customer_id = c.id
-       LEFT JOIN sla s ON p.sla_id = s.id
        WHERE p.id = $1`,
       [id]
     )
@@ -27,11 +25,9 @@ export class ProjectModel {
       SELECT 
         p.*,
         c.name as customer_name,
-        c.code as customer_code,
-        s.resolve_time as sla_resolve_time
+        c.code as customer_code
       FROM project p
       LEFT JOIN customer c ON p.customer_id = c.id
-      LEFT JOIN sla s ON p.sla_id = s.id
       ORDER BY p.created_date DESC
     `)
     return result.rows
@@ -40,15 +36,14 @@ export class ProjectModel {
   /* Create a new project */
   static async create(data: CreateProjectDTO): Promise<Project> {
     const result = await query(
-      `INSERT INTO project (name, code, description, customer_id, sla_id, start_date, end_date, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO project (name, code, description, customer_id, start_date, end_date, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [
         data.name,
         data.code || null,
         data.description || null,
         data.customer_id,
-        data.sla_id,
         data.start_date || null,
         data.end_date || null,
         data.created_by || null
@@ -83,10 +78,6 @@ export class ProjectModel {
       values.push(data.customer_id)
     }
 
-    if (data.sla_id !== undefined) {
-      fields.push(`sla_id = $${paramCount++}`)
-      values.push(data.sla_id)
-    }
 
     if (data.start_date !== undefined) {
       fields.push(`start_date = $${paramCount++}`)

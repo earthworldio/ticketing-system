@@ -7,19 +7,17 @@ import RolesTab from '@/components/features/settings/RolesTab'
 import PermissionsTab from '@/components/features/settings/PermissionsTab'
 import AssignmentsTab from '@/components/features/settings/AssignmentsTab'
 import CustomersTab from '@/components/features/settings/CustomersTab'
-import PrioritiesTab from '@/components/features/settings/PrioritiesTab'
 import StatusTab from '@/components/features/settings/StatusTab'
 import SettingsModal from '@/components/features/settings/SettingsModal'
 import ConfirmModal from '@/components/features/settings/ConfirmModal'
-import { Role, Permission, Customer, Priority, Status } from '@/types'
+import { Role, Permission, Customer, Status } from '@/types'
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'roles' | 'permissions' | 'assignments' | 'customers' | 'priorities' | 'statuses'>('roles')
+  const [activeTab, setActiveTab] = useState<'roles' | 'permissions' | 'assignments' | 'customers' | 'statuses'>('roles')
   const [showRoleModal, setShowRoleModal] = useState(false)
   const [showPermissionModal, setShowPermissionModal] = useState(false)
   const [showAssignModal, setShowAssignModal] = useState(false)
   const [showCustomerModal, setShowCustomerModal] = useState(false)
-  const [showPriorityModal, setShowPriorityModal] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(false)
   
   /* Roles state */
@@ -49,13 +47,6 @@ export default function SettingsPage() {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null)
   const [deleteCustomerLoading, setDeleteCustomerLoading] = useState(false)
-
-  /* Priorities state */
-  const [priorities, setPriorities] = useState<Priority[]>([])
-  const [priorityLoading, setPriorityLoading] = useState(false)
-  const [editingPriority, setEditingPriority] = useState<Priority | null>(null)
-  const [deletingPriority, setDeletingPriority] = useState<Priority | null>(null)
-  const [deletePriorityLoading, setDeletePriorityLoading] = useState(false)
 
   /* Statuses state */
   const [statuses, setStatuses] = useState<Status[]>([])
@@ -409,87 +400,6 @@ export default function SettingsPage() {
     setEditingCustomer(null)
   }
 
-  /* ========== PRIORITIES HANDLERS ========== */
-
-  const fetchPriorities = async () => {
-    setPriorityLoading(true)
-    try {
-      const response = await fetch('/api/priorities')
-      const data = await response.json()
-
-      if (data.success) {
-        setPriorities(data.data)
-      }
-    } catch (error) {
-      console.error('Failed to fetch priorities:', error)
-    } finally {
-      setPriorityLoading(false)
-    }
-  }
-
-  const handleSavePriority = async (formData: { name: string }) => {
-    const isEdit = !!editingPriority
-    const url = isEdit ? `/api/priorities/${editingPriority.id}` : '/api/priorities'
-    const method = isEdit ? 'PUT' : 'POST'
-
-    const response = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-    })
-
-    const data = await response.json()
-
-    if (!data.success) {
-      throw new Error(data.message || `Failed to ${isEdit ? 'update' : 'create'} priority`)
-    }
-
-    await fetchPriorities()
-    setEditingPriority(null)
-  }
-
-  const handleEditPriority = (priority: Priority) => {
-    setEditingPriority(priority)
-    setShowPriorityModal(true)
-  }
-
-  const handleDeletePriorityClick = (priority: Priority) => {
-    setDeletingPriority(priority)
-  }
-
-  const handleConfirmDeletePriority = async () => {
-    if (!deletingPriority) return
-
-    setDeletePriorityLoading(true)
-    try {
-      const response = await fetch(`/api/priorities/${deletingPriority.id}`, {
-        method: 'DELETE',
-      })
-
-      const data = await response.json()
-
-      if (!data.success) {
-        alert(data.message || 'Failed to delete priority')
-        return
-      }
-
-      await fetchPriorities()
-      setDeletingPriority(null)
-    } catch (error) {
-      console.error('Failed to delete priority:', error)
-      alert('Failed to delete priority')
-    } finally {
-      setDeletePriorityLoading(false)
-    }
-  }
-
-  const handleClosePriorityModal = () => {
-    setShowPriorityModal(false)
-    setEditingPriority(null)
-  }
-
   /* ========== STATUSES HANDLERS ========== */
 
   const fetchStatuses = async () => {
@@ -588,8 +498,6 @@ export default function SettingsPage() {
       fetchPermissions()
     } else if (activeTab === 'customers') {
       fetchCustomers()
-    } else if (activeTab === 'priorities') {
-      fetchPriorities()
     } else if (activeTab === 'statuses') {
       fetchStatuses()
     }
@@ -645,15 +553,6 @@ export default function SettingsPage() {
               onCreateCustomer={() => setShowCustomerModal(true)}
               onEditCustomer={handleEditCustomer}
               onDeleteCustomer={handleDeleteCustomerClick}
-            />
-          )}
-          {activeTab === 'priorities' && (
-            <PrioritiesTab
-              priorities={priorities}
-              loading={priorityLoading}
-              onCreatePriority={() => setShowPriorityModal(true)}
-              onEditPriority={handleEditPriority}
-              onDeletePriority={handleDeletePriorityClick}
             />
           )}
           {activeTab === 'statuses' && (
@@ -719,17 +618,6 @@ export default function SettingsPage() {
           } : undefined}
         />
         <SettingsModal
-          isOpen={showPriorityModal}
-          onClose={handleClosePriorityModal}
-          title={editingPriority ? 'Edit Priority' : 'Create Priority'}
-          type="priority"
-          onSubmit={handleSavePriority}
-          initialData={editingPriority ? {
-            id: editingPriority.id,
-            name: editingPriority.name
-          } : undefined}
-        />
-        <SettingsModal
           isOpen={showStatusModal}
           onClose={handleCloseStatusModal}
           title={editingStatus ? 'Edit Status' : 'Create Status'}
@@ -781,16 +669,6 @@ export default function SettingsPage() {
           confirmText="Delete"
           cancelText="Cancel"
           isLoading={deleteCustomerLoading}
-        />
-        <ConfirmModal
-          isOpen={!!deletingPriority}
-          onClose={() => setDeletingPriority(null)}
-          onConfirm={handleConfirmDeletePriority}
-          title="Delete Priority"
-          message={`Are you sure you want to delete "${deletingPriority?.name}"? This action cannot be undone.`}
-          confirmText="Delete"
-          cancelText="Cancel"
-          isLoading={deletePriorityLoading}
         />
         <ConfirmModal
           isOpen={!!deletingStatus}
