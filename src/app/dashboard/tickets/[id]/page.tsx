@@ -256,7 +256,7 @@ export default function TicketDetailPage({ params }: PageProps) {
             </div>
             
             <div className="flex gap-2 items-center">
-              <span className="px-4 py-2 bg-blue-500 text-white text-xs font-medium rounded-lg">
+              <span className="px-4 py-2 bg-[#6366F1] text-white text-xs font-medium rounded-lg">
                 {ticket.status_name || ''}
               </span>
             </div>
@@ -271,8 +271,8 @@ export default function TicketDetailPage({ params }: PageProps) {
                  setEditedDescription(ticket.description || '')
                  setShowDescriptionModal(true)
                }}
-               className="px-4 py-1.25 bg-[#6366F1] text-white rounded-lg hover:bg-[#5558E3] transition-colors font-medium text-sm"
-             >
+               className="border border-[#6366F1] px-4 py-1.25 bg-white text-[#6366F1] rounded-lg hover:bg-[#5558E3] transition-colors font-medium text-sm"
+              >
                Edit Description
              </button>
            </div>
@@ -282,17 +282,17 @@ export default function TicketDetailPage({ params }: PageProps) {
            </p>
            
            <div className='flex items-end justify-between mb-3'>
-             <h3 className="mt-5 text-base font-semibold text-gray-900">Assign to</h3>
+             <h3 className="mt-6 text-base font-semibold text-gray-900">Assign to</h3>
              <button
                onClick={() => setShowAssignModal(true)}
-               className="px-4 py-1.25 bg-[#6366F1] text-white rounded-lg hover:bg-[#5558E3] transition-colors font-medium text-sm"
+               className="border border-[#6366F1] px-4 py-1.25  text-[#6366F1] rounded-lg hover:bg-[#5558E3] transition-colors font-medium text-sm"
              >
                Assign ticket
              </button>
            </div>
           {ticket.owner ? (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-[#6366F1] flex items-center justify-center">
                 <span className="text-white font-semibold text-sm">
                   {ticket.owner_first_name?.charAt(0)}{ticket.owner_last_name?.charAt(0)}
                 </span>
@@ -307,12 +307,11 @@ export default function TicketDetailPage({ params }: PageProps) {
             <p className="text-gray-500 text-sm">Please assign this ticket to a user</p>
           )}
           </div>
-
-           <div className='flex items-end justify-between mb-3'>
+           <div className='mt-6 flex items-end justify-between mb-3'>
              <h3 className="mt-5 text-base font-semibold text-gray-900">Files</h3>
              <button
                onClick={() => setShowFileModal(true)}
-               className="px-4 py-1.25 bg-[#6366F1] text-white rounded-lg hover:bg-[#5558E3] transition-colors font-medium text-sm"
+               className="border border-[#6366F1] px-4 py-1.25  text-[#6366F1] rounded-lg hover:bg-[#5558E3] transition-colors font-medium text-sm"
              >
                Add File
              </button>
