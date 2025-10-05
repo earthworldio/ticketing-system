@@ -10,7 +10,7 @@ import { usePermission } from '@/hooks/usePermission'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { hasPermission } = usePermission()
+  const { hasPermission, loading: permissionLoading } = usePermission()
   const [loading, setLoading] = useState(true)
   const [showProjectModal, setShowProjectModal] = useState(false)
   const [projects, setProjects] = useState<ProjectWithRelations[]>([])
@@ -126,11 +126,13 @@ export default function DashboardPage() {
   })
 
 
-  if (loading) {
+  if (loading || permissionLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg text-gray-600">Loading...</div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6366F1]"></div>
+        </div>
+      </DashboardLayout>
     )
   }
 

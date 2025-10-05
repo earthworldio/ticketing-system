@@ -13,6 +13,7 @@ export default function TicketDetailPage({ params }: PageProps) {
   const resolvedParams = use(params)
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
   const [ticket, setTicket] = useState<TicketWithRelations | null>(null)
   const [files, setFiles] = useState<TicketFileWithUploader[]>([])
   const [users, setUsers] = useState<User[]>([])
@@ -32,6 +33,7 @@ export default function TicketDetailPage({ params }: PageProps) {
       return
     }
 
+    setMounted(true)
     fetchTicketDetail()
     fetchTicketFiles()
     fetchUsers()
@@ -202,10 +204,10 @@ export default function TicketDetailPage({ params }: PageProps) {
     })
   }
 
-  if (loading) {
+  if (!mounted || loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center justify-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6366F1]"></div>
         </div>
       </DashboardLayout>
