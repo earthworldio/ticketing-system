@@ -22,9 +22,12 @@ export default function ProjectDetailPage() {
   const [showTicketModal, setShowTicketModal] = useState(false)
   const [editingTicket, setEditingTicket] = useState<TicketWithRelations | null>(null)
   const [deletingTicketId, setDeletingTicketId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
   
   /* Master data for dropdowns */
   const [users, setUsers] = useState<User[]>([])
+  const [statuses, setStatuses] = useState<any[]>([])
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -82,7 +85,11 @@ export default function ProjectDetailPage() {
       const usersRes = await fetch('/api/admin/users')
       const usersData = await usersRes.json()
 
+      const statusesRes = await fetch('/api/statuses')
+      const statusesData = await statusesRes.json()
+
       if (usersData.success) setUsers(usersData.data)
+      if (statusesData.success) setStatuses(statusesData.data)
     } catch (error) {
       console.error('Failed to fetch master data:', error)
     }
@@ -157,6 +164,22 @@ export default function ProjectDetailPage() {
     })
   }
 
+  /* Filter tickets based on search query and status */
+  const filteredTickets = tickets.filter((ticket) => {
+    // Status filter
+    if (statusFilter !== 'all' && ticket.status_id !== statusFilter) return false
+
+    // Search filter
+    if (searchQuery.trim() === '') return true
+
+    const query = searchQuery.toLowerCase()
+    const matchesName = ticket.name?.toLowerCase().includes(query)
+    const matchesDescription = ticket.description?.toLowerCase().includes(query)
+    const matchesTicketNumber = ticket.ticket_number?.toLowerCase().includes(query)
+
+    return matchesName || matchesDescription || matchesTicketNumber
+  })
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -169,7 +192,7 @@ export default function ProjectDetailPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header Section */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-2">
           <div>
             <button
               onClick={() => router.push('/dashboard')}
@@ -180,14 +203,7 @@ export default function ProjectDetailPage() {
               </svg>
               Back to Projects
             </button>
-            <h1 className="text-2xl font-semibold text-gray-900">
-              {project?.name || 'Project Detail'}
-            </h1>
-            {project && (
-              <p className="text-sm text-gray-500 mt-1">
-                {project.customer_name} • {project.code}
-              </p>
-            )}
+          
           </div>
 
           {/* New Ticket Button - Only show if user has ticket-create permission */}
@@ -212,11 +228,56 @@ export default function ProjectDetailPage() {
 
         {/* Project Description */}
         {project?.description && (
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">Project description</h3>
+          <div className="bg-white border border-gray-200 rounded-lg p-4">           
+            <div className='flex items-center gap-2'>
+              <div className='bg-[#6366F1] border border-[#6366F1] w-25 h-6 rounded-sm flex items-center justify-center text-xs font-semibold'>
+                  <span className="text-lg font-semibold" style={{ color: 'white' }}>
+                    {project.customer_code}
+                  </span>
+              </div>
+              <h1 className="text-2xl font-semibold text-gray-900">
+                {project?.name || ''}
+              </h1> 
+            </div>
+          
+            <h3 className="mt-4 text-md font-semibold text-gray-900 mb-2">Description</h3>
             <p className="text-sm text-gray-600">{project.description}</p>
+
+            {/* Search and Filter */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 mt-4">
+              {/* Search */}
+              <div className="relative w-full md:flex-1">
+                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search for ticket"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="text-black w-1/2  md:w-full pl-10 pr-4 py-2.5 
+                  border border-gray-300 rounded-lg text-sm text-gray-600 
+                  placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
+                />
+              </div>
+
+              {/* Status Filter */}
+              <select 
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full md:w-auto px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#6366F1] bg-white"
+              >
+                <option value="all">All Status</option>
+                {statuses.map((status) => (
+                  <option key={status.id} value={status.id}>
+                    {status.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
+
 
         {/* Tickets Section */}
         <div>
@@ -243,26 +304,38 @@ export default function ProjectDetailPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6366F1]"></div>
               <span className="ml-3 text-gray-600">Loading tickets...</span>
             </div>
-          ) : tickets.length === 0 ? (
+          ) : filteredTickets.length === 0 ? (
             /* Empty State */
             <div className="flex flex-col items-center justify-center py-20 bg-white border border-gray-200 rounded-lg">
-              <p className="text-black text-xl font-medium tracking-wide mb-8">
-                Get started by creating a ticket!
-              </p>
-              <div className="relative w-48 h-48">
-                <Image
-                  src="/coworking.png"
-                  alt="No tickets illustration"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
+              {tickets.length === 0 ? (
+                <>
+                  <p className="text-black text-xl font-medium tracking-wide mb-8">
+                    Get started by creating a ticket!
+                  </p>
+                  <div className="relative w-48 h-48">
+                    <Image
+                      src="/coworking.png"
+                      alt="No tickets illustration"
+                      fill
+                      className="object-contain"
+                      priority
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <p className="text-xl font-medium text-gray-700 mb-2">No tickets found</p>
+                  <p className="text-sm text-gray-500">Try adjusting your search or filters</p>
+                </>
+              )}
             </div>
           ) : (
             /* Tickets List */
             <div className="space-y-4">
-              {tickets.map((ticket) => (
+              {filteredTickets.map((ticket) => (
                 <div
                   key={ticket.id}
                   className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"

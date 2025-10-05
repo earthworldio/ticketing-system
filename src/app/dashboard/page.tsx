@@ -110,11 +110,11 @@ export default function DashboardPage() {
 
   /* Filter projects based on search query and status */
   const filteredProjects = projects.filter((project) => {
-    // Status filter
+
     if (statusFilter === 'open' && project.is_closed === true) return false
     if (statusFilter === 'closed' && project.is_closed !== true) return false
 
-    // Search filter
+
     if (searchQuery.trim() === '') return true
 
     const query = searchQuery.toLowerCase()
