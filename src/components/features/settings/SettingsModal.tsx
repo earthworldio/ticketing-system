@@ -44,35 +44,55 @@ export default function SettingsModal({
   const [fetchingPermissions, setFetchingPermissions] = useState(false)
 
   useEffect(() => {
-    if (isOpen && initialData) {
-      if (type === 'assign') {
-        setFormData({
-          name: '',
-          description: '',
-          role_id: initialData.role_id || '',
-          permission_id: initialData.permission_id || '',
-          code: ''
-        })
-        setSelectedPermissions(initialData.permission_id ? [initialData.permission_id] : [])
-      } else if (type === 'customer') {
-        setFormData({
-          name: initialData.name || '',
-          description: '',
-          role_id: '',
-          permission_id: '',
-          code: initialData.code || ''
-        })
+    if (isOpen) {
+      if (initialData) {
+        // Edit mode - has initialData
+        if (type === 'assign') {
+          const roleId = initialData.role_id || ''
+          setFormData({
+            name: '',
+            description: '',
+            role_id: roleId,
+            permission_id: initialData.permission_id || '',
+            code: ''
+          })
+          // Fetch existing permissions if role_id is provided
+          if (roleId) {
+            fetchRolePermissions(roleId)
+          } else {
+            setSelectedPermissions(initialData.permission_id ? [initialData.permission_id] : [])
+          }
+        } else if (type === 'customer') {
+          setFormData({
+            name: initialData.name || '',
+            description: '',
+            role_id: '',
+            permission_id: '',
+            code: initialData.code || ''
+          })
+        } else {
+          setFormData({
+            name: initialData.name || '',
+            description: initialData.description || '',
+            role_id: '',
+            permission_id: '',
+            code: ''
+          })
+          setSelectedPermissions([])
+        }
       } else {
-        setFormData({
-          name: initialData.name || '',
-          description: initialData.description || '',
-          role_id: '',
+        // Create mode - no initialData, reset form
+        setFormData({ 
+          name: '', 
+          description: '', 
+          role_id: '', 
           permission_id: '',
           code: ''
         })
         setSelectedPermissions([])
       }
-    } else if (!isOpen) {
+    } else {
+      // Modal closed - reset everything
       setFormData({ 
         name: '', 
         description: '', 
@@ -84,6 +104,31 @@ export default function SettingsModal({
       setError('')
     }
   }, [isOpen, initialData, type])
+
+  // Helper function to fetch role permissions
+  const fetchRolePermissions = async (roleId: string) => {
+    setFetchingPermissions(true)
+    try {
+      const response = await fetch(`/api/role-permissions/role/${roleId}`)
+      const data = await response.json()
+      
+      if (data.success && data.data && data.data.length > 0) {
+        // API returns permission objects directly, use 'id' field
+        const existingPermissionIds = data.data
+          .map((item: any) => item.id || item.permission_id || item.permissionId)
+          .filter(Boolean) // Remove undefined values
+        
+        setSelectedPermissions(existingPermissionIds)
+      } else {
+        setSelectedPermissions([])
+      }
+    } catch (error) {
+      console.error('Failed to fetch role permissions:', error)
+      setSelectedPermissions([])
+    } finally {
+      setFetchingPermissions(false)
+    }
+  }
 
   if (!isOpen) return null
 
@@ -144,25 +189,7 @@ export default function SettingsModal({
       return
     }
 
-    if (initialData?.id) {
-      return
-    }
-
-    setFetchingPermissions(true)
-    
-    try {
-      const response = await fetch(`/api/role-permissions/role/${roleId}`)
-      const data = await response.json()
-      
-      if (data.success && data.data) {
-        const existingPermissionIds = data.data.map((item: any) => item.permission_id)
-        setSelectedPermissions(existingPermissionIds)
-      }
-    } catch (error) {
-      console.error('Failed to fetch role permissions:', error)
-    } finally {
-      setFetchingPermissions(false)
-    }
+    await fetchRolePermissions(roleId)
   }
 
   const isEditMode = !!(initialData && initialData.id)
@@ -256,7 +283,7 @@ export default function SettingsModal({
                         />
                         <span className="text-sm text-gray-900">{permission.name}</span>
                       </label>
-                      ))
+                    ))
                     )}
                   </div>
                 )}
