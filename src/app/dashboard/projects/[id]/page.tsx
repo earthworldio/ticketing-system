@@ -24,6 +24,9 @@ export default function ProjectDetailPage() {
   const [deletingTicketId, setDeletingTicketId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [showStatusModal, setShowStatusModal] = useState(false)
+  const [selectedTicketForStatus, setSelectedTicketForStatus] = useState<TicketWithRelations | null>(null)
+  const [newStatusId, setNewStatusId] = useState('')
   
   /* Master data for dropdowns */
   const [users, setUsers] = useState<User[]>([])
@@ -151,6 +154,47 @@ export default function ProjectDetailPage() {
     } catch (error: any) {
       console.error('Failed to delete ticket:', error)
       alert(error.message)
+    }
+  }
+
+  /* Handle open status modal */
+  const handleOpenStatusModal = (ticket: TicketWithRelations) => {
+    setSelectedTicketForStatus(ticket)
+    setNewStatusId(ticket.status_id || '')
+    setShowStatusModal(true)
+  }
+
+  /* Handle change ticket status */
+  const handleChangeStatus = async () => {
+    if (!selectedTicketForStatus || !newStatusId) return
+
+    try {
+      const userData = JSON.parse(localStorage.getItem('user') || '{}')
+      const response = await fetch(`/api/tickets/${selectedTicketForStatus.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status_id: newStatusId,
+          updated_by: userData.id
+        }),
+      })
+
+      const data = await response.json()
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to update status')
+      }
+
+      await fetchTickets()
+      setShowStatusModal(false)
+      setSelectedTicketForStatus(null)
+      setNewStatusId('')
+
+    } catch (error: any) {
+      console.error('Failed to update status:', error)
+      alert(error.message || 'Failed to update status')
     }
   }
 
@@ -345,6 +389,9 @@ export default function ProjectDetailPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       {/* Ticket Header */}
+
+                      <div className="flex items-center justify-between">
+
                       <div className="flex items-center gap-2 mb-3">
                         <div className='bg-[#6366F1] border border-[#6366F1] w-45 h-6 rounded-sm flex items-center justify-center text-xs font-semibold'>
                           <span className="text-lg font-semibold" style={{ color: 'white' }}>
@@ -355,20 +402,48 @@ export default function ProjectDetailPage() {
                         <span className="text-lg font-medium" style={{ color: 'black' }}>
                           {ticket.name}
                         </span>
-                        {ticket.status_name && (
-                          <>
+                        
+                        {/* Status Badge with Edit Button */}
+                        <div className="flex items-center gap-2">
+                          {ticket.status_name && (
                             <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
                               {ticket.status_name}
                             </span>
-                          </>
-                        )}
-
+                          )}
+                          
                         
+                        </div>
                       </div>
+
+                      {/* Edit Status Button */}
+                      <div className="flex items-center gap-2">
+                      <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleOpenStatusModal(ticket)
+                            }}
+                            className="border flex items-center gap-2 px-2 py-0.75 
+                            text-[#6366F1] bg-[#6366F1]/10 rounded-lg transition-colors"
+                            title="Change Status"
+                          >
+                            <span className="text-sm font-medium">
+                              Change Status
+                            </span>
+
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg> 
+                      </button>
+                      </div>
+                      
+
+                      </div>
+                      
+                      
 
                       {/* Ticket Description */}
                       {ticket.description && (
-                        <p className="text-sm text-gray-600 mt-1 mb-2">
+                        <p className="text-sm text-gray-600 mt-4 mb-4">
                           {ticket.description}
                         </p>
                       )}
@@ -379,7 +454,7 @@ export default function ProjectDetailPage() {
                         </p>
                       )}
 
-                    
+                 
                       <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-4">
                         {/* Creator Info */}
                         {ticket.creator_first_name ? (
@@ -449,6 +524,65 @@ export default function ProjectDetailPage() {
         confirmText="Delete"
         cancelText="Cancel"
       />
+
+      {/* Change Status Modal */}
+      {showStatusModal && selectedTicketForStatus && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm" 
+            onClick={() => {
+              setShowStatusModal(false)
+              setSelectedTicketForStatus(null)
+              setNewStatusId('')
+            }} 
+          />
+          <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Change Ticket Status</h3>
+            
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-3">
+                Ticket: <span className="font-semibold text-gray-900">{selectedTicketForStatus.ticket_number}</span> - {selectedTicketForStatus.name}
+              </p>
+              
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                New Status
+              </label>
+              <select
+                value={newStatusId}
+                onChange={(e) => setNewStatusId(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
+              >
+                <option value="">Select status</option>
+                {statuses.map((status) => (
+                  <option key={status.id} value={status.id}>
+                    {status.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowStatusModal(false)
+                  setSelectedTicketForStatus(null)
+                  setNewStatusId('')
+                }}
+                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleChangeStatus}
+                disabled={!newStatusId}
+                className="flex-1 px-4 py-2.5 bg-[#6366F1] text-white rounded-lg hover:bg-[#5558E3] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Update Status
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   )
 }

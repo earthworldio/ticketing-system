@@ -4,6 +4,7 @@ import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/features/DashboardLayout'
 import DeleteTicketModal from '@/components/features/DeleteTicketModal'
+import DeleteFileModal from '@/components/features/DeleteFileModal'
 import { TicketWithRelations, TicketFileWithUploader, User } from '@/types'
 
 interface PageProps {
@@ -22,9 +23,11 @@ export default function TicketDetailPage({ params }: PageProps) {
   const [showFileModal, setShowFileModal] = useState(false)
   const [showDescriptionModal, setShowDescriptionModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showDeleteFileModal, setShowDeleteFileModal] = useState(false)
   const [assignLoading, setAssignLoading] = useState(false)
   const [selectedOwner, setSelectedOwner] = useState('')
   const [editedDescription, setEditedDescription] = useState('')
+  const [deletingFile, setDeletingFile] = useState<TicketFileWithUploader | null>(null)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -231,6 +234,34 @@ export default function TicketDetailPage({ params }: PageProps) {
     }
   }
 
+  const handleDeleteFileClick = (file: TicketFileWithUploader) => {
+    setDeletingFile(file)
+    setShowDeleteFileModal(true)
+  }
+
+  const handleConfirmDeleteFile = async () => {
+    if (!deletingFile) return
+
+    try {
+      const response = await fetch(`/api/ticket-files/${deletingFile.id}`, {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to delete file')
+      }
+
+      // Refresh files list
+      await fetchTicketFiles()
+      setDeletingFile(null)
+    } catch (error: any) {
+      console.error('Failed to delete file:', error)
+      alert(error.message || 'Failed to delete file')
+    }
+  }
+
   if (!mounted || loading) {
     return (
       <DashboardLayout>
@@ -311,7 +342,8 @@ export default function TicketDetailPage({ params }: PageProps) {
                  setEditedDescription(ticket.description || '')
                  setShowDescriptionModal(true)
                }}
-               className="border border-[#6366F1] px-4 py-1.25 bg-white text-[#6366F1] rounded-lg hover:bg-[#5558E3] transition-colors font-medium text-sm"
+               className="border border-[#6366F1] 
+               px-4 py-1.25 bg-white text-[#6366F1] rounded-lg hover:bg-[#5558E3] hover:text-white transition-colors font-medium text-sm"
               >
                Edit Description
              </button>
@@ -325,7 +357,8 @@ export default function TicketDetailPage({ params }: PageProps) {
              <h3 className="mt-6 text-base font-semibold text-gray-900">Assign to</h3>
              <button
                onClick={() => setShowAssignModal(true)}
-               className="border border-[#6366F1] px-4 py-1.25  text-[#6366F1] rounded-lg hover:bg-[#5558E3] transition-colors font-medium text-sm"
+               className="border border-[#6366F1] px-4 py-1.25  
+               text-[#6366F1] rounded-lg hover:bg-[#5558E3] hover:text-white transition-colors font-medium text-sm"
              >
                Assign ticket
              </button>
@@ -351,7 +384,9 @@ export default function TicketDetailPage({ params }: PageProps) {
              <h3 className="mt-5 text-base font-semibold text-gray-900">Files</h3>
              <button
                onClick={() => setShowFileModal(true)}
-               className="border border-[#6366F1] px-4 py-1.25  text-[#6366F1] rounded-lg hover:bg-[#5558E3] transition-colors font-medium text-sm"
+               
+               className="border border-[#6366F1] px-4 py-1.25  text-[#6366F1] rounded-lg 
+               hover:bg-[#5558E3] hover:text-white transition-colors font-medium text-sm"
              >
                Add File
              </button>
@@ -360,20 +395,39 @@ export default function TicketDetailPage({ params }: PageProps) {
            {files.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {files.map((file) => (
-                <a
+                <div
                   key={file.id}
-                  href={file.file_path}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                  className="relative flex flex-col items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
                 >
-                  <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-xs font-medium text-gray-900 text-center truncate w-full" title={file.file_name}>
-                    {file.file_name}
-                  </p>
-                </a>
+                  {/* Delete Button */}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      handleDeleteFileClick(file)
+                    }}
+                    className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
+                    title="Delete file"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+
+                  {/* File Link */}
+                  <a
+                    href={file.file_path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center w-full cursor-pointer"
+                  >
+                    <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-xs font-medium text-gray-900 text-center truncate w-full" title={file.file_name}>
+                      {file.file_name}
+                    </p>
+                  </a>
+                </div>
               ))}
             </div>
           ) : (
@@ -505,6 +559,17 @@ export default function TicketDetailPage({ params }: PageProps) {
         onConfirm={handleDeleteTicket}
         ticketName={ticket?.name || ''}
         ticketNumber={ticket?.ticket_number}
+      />
+
+      {/* Delete File Modal */}
+      <DeleteFileModal
+        isOpen={showDeleteFileModal}
+        onClose={() => {
+          setShowDeleteFileModal(false)
+          setDeletingFile(null)
+        }}
+        onConfirm={handleConfirmDeleteFile}
+        fileName={deletingFile?.file_name || ''}
       />
     </DashboardLayout>
   )
