@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import DashboardLayout from '@/components/features/DashboardLayout'
 import TicketModal from '@/components/features/TicketModal'
 import ConfirmModal from '@/components/features/settings/ConfirmModal'
+import DeleteTicketModal from '@/components/features/DeleteTicketModal'
 import Image from 'next/image'
 import { TicketWithRelations, ProjectWithRelations, User } from '@/types'
 import { usePermission } from '@/hooks/usePermission'
@@ -27,6 +28,8 @@ export default function ProjectDetailPage() {
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [selectedTicketForStatus, setSelectedTicketForStatus] = useState<TicketWithRelations | null>(null)
   const [newStatusId, setNewStatusId] = useState('')
+  const [showDeleteTicketModal, setShowDeleteTicketModal] = useState(false)
+  const [deletingTicket, setDeletingTicket] = useState<TicketWithRelations | null>(null)
   
   /* Master data for dropdowns */
   const [users, setUsers] = useState<User[]>([])
@@ -223,6 +226,37 @@ export default function ProjectDetailPage() {
 
     return matchesName || matchesDescription || matchesTicketNumber
   })
+
+  /* Handle delete ticket click */
+  const handleDeleteTicketClick = (ticket: TicketWithRelations) => {
+    setDeletingTicket(ticket)
+    setShowDeleteTicketModal(true)
+  }
+
+  /* Handle confirm delete ticket */
+  const handleConfirmDeleteTicket = async () => {
+    if (!deletingTicket) return
+
+    try {
+      const response = await fetch(`/api/tickets/${deletingTicket.id}`, {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to delete ticket')
+      }
+
+      // Refresh tickets list
+      await fetchTickets()
+      setShowDeleteTicketModal(false)
+      setDeletingTicket(null)
+    } catch (error: any) {
+      console.error('Failed to delete ticket:', error)
+      alert(error.message || 'Failed to delete ticket')
+    }
+  }
 
   if (loading || permissionLoading) {
     return (
@@ -434,6 +468,19 @@ export default function ProjectDetailPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg> 
                       </button>
+                      {/* Delete Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDeleteTicketClick(ticket)
+                }}
+                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="Delete Ticket"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
                       </div>
                       
 
@@ -583,6 +630,18 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Delete Ticket Modal */}
+      <DeleteTicketModal
+        isOpen={showDeleteTicketModal}
+        onClose={() => {
+          setShowDeleteTicketModal(false)
+          setDeletingTicket(null)
+        }}
+        onConfirm={handleConfirmDeleteTicket}
+        ticketName={deletingTicket?.name || ''}
+        ticketNumber={deletingTicket?.ticket_number}
+      />
     </DashboardLayout>
   )
 }
