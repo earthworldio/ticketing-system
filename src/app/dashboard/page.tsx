@@ -16,6 +16,8 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<ProjectWithRelations[]>([])
   const [loadingProjects, setLoadingProjects] = useState(false)
   const [projectCreators, setProjectCreators] = useState<Record<string, any>>({})
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'closed'>('all')
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -106,6 +108,23 @@ export default function DashboardPage() {
     })
   }
 
+  /* Filter projects based on search query and status */
+  const filteredProjects = projects.filter((project) => {
+    // Status filter
+    if (statusFilter === 'open' && project.is_closed === true) return false
+    if (statusFilter === 'closed' && project.is_closed !== true) return false
+
+    // Search filter
+    if (searchQuery.trim() === '') return true
+
+    const query = searchQuery.toLowerCase()
+    const matchesCode = project.customer_code?.toLowerCase().includes(query)
+    const matchesName = project.name?.toLowerCase().includes(query)
+    const matchesDescription = project.description?.toLowerCase().includes(query)
+
+    return matchesCode || matchesName || matchesDescription
+  })
+
 
   if (loading) {
     return (
@@ -152,6 +171,8 @@ export default function DashboardPage() {
             <input
               type="text"
               placeholder="Search for project"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="text-black w-full md:w-1/2 pl-10 pr-4 py-2.5 
               border border-gray-300 rounded-lg text-sm text-gray-600 
               placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6366F1]"
@@ -160,20 +181,15 @@ export default function DashboardPage() {
 
           {/* Filters - 50/50 on mobile, auto on desktop */}
           <div className="flex gap-3 w-full md:w-auto order-1 md:order-2">
-            {/* Select Priority Dropdown */}
-            <select className="flex-1 md:flex-none px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#6366F1] bg-white">
-              <option>Select Priority</option>
-              <option>High</option>
-              <option>Medium</option>
-              <option>Low</option>
-            </select>
-
-            {/* This Week Dropdown */}
-            <select className="flex-1 md:flex-none px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#6366F1] bg-white">
-              <option>This Week</option>
-              <option>Today</option>
-              <option>This Month</option>
-              <option>All Time</option>
+            {/* Status Filter Dropdown */}
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'open' | 'closed')}
+              className="flex-1 md:flex-none px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#6366F1] bg-white"
+            >
+              <option value="all">All Projects</option>
+              <option value="open">Open Projects</option>
+              <option value="closed">Closed Projects</option>
             </select>
           </div>
         </div>
@@ -214,28 +230,40 @@ export default function DashboardPage() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6366F1]"></div>
             <span className="ml-3 text-gray-600">Loading projects...</span>
           </div>
-        ) : projects.length === 0 ? (
+        ) : filteredProjects.length === 0 ? (
           /* Empty State */
           <div className="flex flex-col items-center justify-center py-20">
-            <p className="text-black text-2xl font-medium tracking-wide mb-8">
-              Assign project to get started !
-            </p>
-            
-            {/* Coworking Icon */}
-            <div className="relative w-64 h-64">
-              <Image
-                src="/coworking.png"
-                alt="Coworking illustration"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
+            {projects.length === 0 ? (
+              <>
+                <p className="text-black text-2xl font-medium tracking-wide mb-8">
+                  Assign project to get started !
+                </p>
+                
+                {/* Coworking Icon */}
+                <div className="relative w-64 h-64">
+                  <Image
+                    src="/coworking.png"
+                    alt="Coworking illustration"
+                    fill
+                    className="object-contain"
+                    priority
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <p className="text-xl font-medium text-gray-700 mb-2">No projects found</p>
+                <p className="text-sm text-gray-500">Try adjusting your search or filters</p>
+              </>
+            )}
           </div>
         ) : (
           /* Projects List */
           <div className="space-y-4">
-            {projects.map((project) => (
+            {filteredProjects.map((project) => (
               <div
                 key={project.id}
                 className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"

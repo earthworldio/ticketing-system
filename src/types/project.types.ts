@@ -8,6 +8,7 @@ export interface Project {
   customer_id: string;
   start_date?: Date | string | null;
   end_date?: Date | string | null;
+  is_closed?: boolean | null;
   created_date: Date;
   updated_date: Date;
   created_by?: string | null;
