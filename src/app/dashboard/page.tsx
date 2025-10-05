@@ -244,7 +244,7 @@ export default function DashboardPage() {
                 {/* Coworking Icon */}
                 <div className="relative w-64 h-64">
                   <Image
-                    src="/coworking.png"
+                    src="/co-working.png"
                     alt="Coworking illustration"
                     fill
                     className="object-contain"

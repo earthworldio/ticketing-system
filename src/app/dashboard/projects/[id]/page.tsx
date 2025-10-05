@@ -312,17 +312,17 @@ export default function ProjectDetailPage() {
               {tickets.length === 0 ? (
                 <>
                   <p className="text-black text-xl font-medium tracking-wide mb-8">
-                    Get started by creating a ticket!
+                    Get started by creating a ticket !
                   </p>
-                  <div className="relative w-48 h-48">
-                    <Image
-                      src="/coworking.png"
-                      alt="No tickets illustration"
-                      fill
-                      className="object-contain"
-                      priority
-                    />
-                  </div>
+                    <div className="relative w-48 h-48">
+                      <Image
+                        src="/co-working.png"
+                        alt="No tickets illustration"
+                        fill
+                        className="object-contain"
+                        priority
+                      />
+                    </div>
                 </>
               ) : (
                 <>
