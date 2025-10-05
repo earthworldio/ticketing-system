@@ -61,3 +61,32 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/* DELETE /api/project-sla?project_id=xxx - Delete all SLAs for a project */
+export async function DELETE(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const project_id = searchParams.get('project_id')
+
+    if (!project_id) {
+      return NextResponse.json(
+        { success: false, message: 'project_id is required' },
+        { status: 400 }
+      )
+    }
+
+    const result = await ProjectSLAController.removeAllSLAs(project_id)
+
+    if (!result.success) {
+      return NextResponse.json(result, { status: 400 })
+    }
+
+    return NextResponse.json(result, { status: 200 })
+  } catch (error: any) {
+    console.error('API Delete Project-SLAs Error:', error)
+    return NextResponse.json(
+      { success: false, message: 'Internal server error', error: error.message },
+      { status: 500 }
+    )
+  }
+}
+

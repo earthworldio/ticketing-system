@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/features/DashboardLayout'
+import DeleteTicketModal from '@/components/features/DeleteTicketModal'
 import { TicketWithRelations, TicketFileWithUploader, User } from '@/types'
 
 interface PageProps {
@@ -20,6 +21,7 @@ export default function TicketDetailPage({ params }: PageProps) {
   const [showAssignModal, setShowAssignModal] = useState(false)
   const [showFileModal, setShowFileModal] = useState(false)
   const [showDescriptionModal, setShowDescriptionModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [assignLoading, setAssignLoading] = useState(false)
   const [selectedOwner, setSelectedOwner] = useState('')
   const [editedDescription, setEditedDescription] = useState('')
@@ -204,6 +206,31 @@ export default function TicketDetailPage({ params }: PageProps) {
     })
   }
 
+  const handleDeleteTicket = async () => {
+    try {
+      const response = await fetch(`/api/tickets/${resolvedParams.id}`, {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to delete ticket')
+      }
+
+      // Redirect back to project detail page
+      const projectId = localStorage.getItem('project_id')
+      if (projectId) {
+        router.push(`/dashboard/projects/${projectId}`)
+      } else {
+        router.push('/dashboard')
+      }
+    } catch (error: any) {
+      console.error('Failed to delete ticket:', error)
+      alert(error.message || 'Failed to delete ticket')
+    }
+  }
+
   if (!mounted || loading) {
     return (
       <DashboardLayout>
@@ -261,6 +288,17 @@ export default function TicketDetailPage({ params }: PageProps) {
               <span className="px-4 py-2 bg-[#6366F1] text-white text-xs font-medium rounded-lg">
                 {ticket.status_name || ''}
               </span>
+              
+              {/* Delete Button */}
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="Delete Ticket"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
             </div>
           </div>
           <p className="text-xs text-gray-500  mb-3" >This ticket was created at : {formatDate(ticket.created_date)}</p>
@@ -459,6 +497,15 @@ export default function TicketDetailPage({ params }: PageProps) {
           </div>
         </div>
       )}
+
+      {/* Delete Ticket Modal */}
+      <DeleteTicketModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteTicket}
+        ticketName={ticket?.name || ''}
+        ticketNumber={ticket?.ticket_number}
+      />
     </DashboardLayout>
   )
 }

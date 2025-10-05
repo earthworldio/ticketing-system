@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/features/DashboardLayout'
 import ProjectModal from '@/components/features/ProjectModal'
+import DeleteProjectModal from '@/components/features/DeleteProjectModal'
 import Image from 'next/image'
 import { ProjectWithRelations } from '@/types'
 import { usePermission } from '@/hooks/usePermission'
@@ -13,11 +14,15 @@ export default function DashboardPage() {
   const { hasPermission, loading: permissionLoading } = usePermission()
   const [loading, setLoading] = useState(true)
   const [showProjectModal, setShowProjectModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [projects, setProjects] = useState<ProjectWithRelations[]>([])
   const [loadingProjects, setLoadingProjects] = useState(false)
   const [projectCreators, setProjectCreators] = useState<Record<string, any>>({})
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'closed'>('all')
+  const [editingProject, setEditingProject] = useState<ProjectWithRelations | null>(null)
+  const [deletingProject, setDeletingProject] = useState<ProjectWithRelations | null>(null)
+  const [projectSLAs, setProjectSLAs] = useState<Record<string, any[]>>({})
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -42,9 +47,12 @@ export default function DashboardPage() {
       if (data.success) {
         setProjects(data.data)
         
-        /* Fetch creator info for each project */
+        /* Fetch creator info and SLAs for each project */
         const creators: Record<string, any> = {}
+        const slas: Record<string, any[]> = {}
+        
         for (const project of data.data) {
+          // Fetch creator info
           if (project.created_by && !creators[project.created_by]) {
             try {
               const userResponse = await fetch(`/api/users/${project.created_by}`)
@@ -56,8 +64,21 @@ export default function DashboardPage() {
               console.error(`Failed to fetch creator info for ${project.created_by}:`, error)
             }
           }
+          
+          // Fetch project SLAs
+          try {
+            const slaResponse = await fetch(`/api/project-sla?project_id=${project.id}`)
+            const slaData = await slaResponse.json()
+            if (slaData.success) {
+              slas[project.id] = slaData.data
+            }
+          } catch (error) {
+            console.error(`Failed to fetch SLAs for project ${project.id}:`, error)
+          }
         }
+        
         setProjectCreators(creators)
+        setProjectSLAs(slas)
       }
     } catch (error) {
       console.error('Failed to fetch projects:', error)
@@ -66,7 +87,7 @@ export default function DashboardPage() {
     }
   }
 
-  /* Handle create project */
+  /* Handle create/update project */
   const handleCreateProject = async (projectData: any) => {
     try {
       /* Get token for authentication */
@@ -95,6 +116,58 @@ export default function DashboardPage() {
     } catch (error: any) {
       console.error('Failed to create project:', error)
       throw error
+    }
+  }
+
+  /* Handle edit project */
+  const handleEditProject = async (project: ProjectWithRelations) => {
+    // Fetch SLAs for this project
+    try {
+      const slaResponse = await fetch(`/api/project-sla?project_id=${project.id}`)
+      const slaData = await slaResponse.json()
+      
+      if (slaData.success) {
+        // Store SLAs in the project object
+        const projectWithSLAs = {
+          ...project,
+          slas: slaData.data
+        }
+        setEditingProject(projectWithSLAs)
+        setShowProjectModal(true)
+      }
+    } catch (error) {
+      console.error('Failed to fetch project SLAs:', error)
+      alert('Failed to load project data')
+    }
+  }
+
+  /* Handle delete project - Open modal */
+  const handleDeleteClick = (project: ProjectWithRelations) => {
+    setDeletingProject(project)
+    setShowDeleteModal(true)
+  }
+
+  /* Confirm delete project */
+  const confirmDeleteProject = async () => {
+    if (!deletingProject) return
+
+    try {
+      const response = await fetch(`/api/projects/${deletingProject.id}`, {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to delete project')
+      }
+
+      // Refresh projects list
+      await fetchProjects()
+      
+    } catch (error: any) {
+      console.error('Failed to delete project:', error)
+      alert(error.message || 'เกิดข้อผิดพลาดในการลบโปรเจกต์')
     }
   }
 
@@ -273,27 +346,64 @@ export default function DashboardPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     {/* Project Header */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className='bg-[#6366F1] border border-[#6366F1] w-25 h-6 rounded-sm flex items-center justify-center text-xs font-semibold'>
-                        <span className="text-lg font-semibold" style={{ color: 'white' }}>
-                          {project.customer_code}
-                        </span>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className='flex flex-row items-center gap-2'>
+                          <div className='bg-[#6366F1] border border-[#6366F1] w-25 h-6 rounded-sm flex items-center justify-center text-xs font-semibold'>
+                            <span className="text-lg font-semibold" style={{ color: 'white' }}>
+                              {project.customer_code}
+                            </span>
+                          </div>
+
+                          <span className="text-lg font-medium" style={{ color: 'black' }}>
+                            {project.name}
+                          </span>
+                          {project.start_date && (
+                            <>
+                              <span className='text-sm font-medium text-gray-500'>Start: {formatDate(project.start_date)}</span>
+                            </>
+                          )}
+                          <span className='text-sm font-medium text-gray-500'>-</span>
+                          {project.end_date && (
+                            <>
+                              <span className='text-sm font-medium text-gray-500'>End: {formatDate(project.end_date)}</span>
+                            </>
+                          )}
                       </div>
 
-                      <span className="text-lg font-medium" style={{ color: 'black' }}>
-                        {project.name}
-                      </span>
-                      {project.start_date && (
-                        <>
-                          <span className='text-sm font-medium text-gray-500'>Start: {formatDate(project.start_date)}</span>
-                        </>
-                      )}
-                       <span className='text-sm font-medium text-gray-500'>-</span>
-                      {project.end_date && (
-                        <>
-                          <span className='text-sm font-medium text-gray-500'>End: {formatDate(project.end_date)}</span>
-                        </>
-                      )}
+                        <div className="flex items-center gap-2">
+                          {/* Edit Button */}
+                          {hasPermission('project-update') && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleEditProject(project)
+                              }}
+                              className="p-2 text-gray-600 hover:text-[#6366F1] hover:bg-[#6366F1]/10 rounded-lg transition-colors"
+                              title="แก้ไขโปรเจกต์"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                          )}
+
+                          {/* Delete Button */}
+                          {hasPermission('project-delete') && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteClick(project)
+                              }}
+                              className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="ลบโปรเจกต์"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                     
                     </div>
 
                     
@@ -355,8 +465,23 @@ export default function DashboardPage() {
       {/* Project Modal */}
       <ProjectModal
         isOpen={showProjectModal}
-        onClose={() => setShowProjectModal(false)}
+        onClose={() => {
+          setShowProjectModal(false)
+          setEditingProject(null)
+        }}
         onSubmit={handleCreateProject}
+        editingProject={editingProject}
+      />
+
+      {/* Delete Project Modal */}
+      <DeleteProjectModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false)
+          setDeletingProject(null)
+        }}
+        onConfirm={confirmDeleteProject}
+        projectName={deletingProject?.name || ''}
       />
     </DashboardLayout>
   )

@@ -7,6 +7,7 @@ interface ProjectModalProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (data: any) => Promise<void>
+  editingProject?: any | null
 }
 
 interface SLAInput {
@@ -16,7 +17,7 @@ interface SLAInput {
   unit: 'minutes' | 'hours' | 'days' | 'months'
 }
 
-export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModalProps) {
+export default function ProjectModal({ isOpen, onClose, onSubmit, editingProject }: ProjectModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -39,6 +40,46 @@ export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModal
   useEffect(() => {
     if (isOpen) {
       fetchMasterData()
+      
+      // If editing, populate form with existing data
+      if (editingProject) {
+        setFormData({
+          name: editingProject.name || '',
+          code: editingProject.code || '',
+          description: editingProject.description || '',
+          customer_id: editingProject.customer_id || '',
+          start_date: editingProject.start_date ? new Date(editingProject.start_date).toISOString().split('T')[0] : '',
+          end_date: editingProject.end_date ? new Date(editingProject.end_date).toISOString().split('T')[0] : ''
+        })
+        
+        // Convert SLAs to input format
+        if (editingProject.slas && editingProject.slas.length > 0) {
+          const slaInputsFromProject = editingProject.slas.map((sla: any, index: number) => {
+            // Convert minutes back to a more readable unit
+            let value = sla.sla_resolve_time
+            let unit: 'minutes' | 'hours' | 'days' | 'months' = 'minutes'
+            
+            if (value % 43200 === 0) {
+              value = value / 43200
+              unit = 'months'
+            } else if (value % 1440 === 0) {
+              value = value / 1440
+              unit = 'days'
+            } else if (value % 60 === 0) {
+              value = value / 60
+              unit = 'hours'
+            }
+            
+            return {
+              id: sla.sla_id || `existing-${index}`,
+              name: sla.sla_name || '',
+              value: value.toString(),
+              unit: unit
+            }
+          })
+          setSlaInputs(slaInputsFromProject)
+        }
+      }
     } else {
       // Reset form when modal closes
       setFormData({
@@ -52,7 +93,7 @@ export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModal
       setSlaInputs([{ id: '1', name: '', value: '', unit: 'hours' }])
       setError('')
     }
-  }, [isOpen])
+  }, [isOpen, editingProject])
 
   const fetchMasterData = async () => {
     setLoadingMasterData(true)
@@ -115,72 +156,154 @@ export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModal
         throw new Error('Please add at least one SLA')
       }
 
-      // Step 1: Create all SLA records
-      const slaIds: string[] = []
-      
-      for (const sla of validSLAs) {
-        const minutes = convertToMinutes(parseFloat(sla.value), sla.unit)
+      const token = localStorage.getItem('token')
+
+      if (editingProject) {
+        // EDIT MODE: Update existing project
         
-        const slaResponse = await fetch('/api/sla', {
+        // Step 1: Update project details
+        const projectResponse = await fetch(`/api/projects/${editingProject.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            code: formData.code || null,
+            description: formData.description || null,
+            customer_id: formData.customer_id,
+            start_date: formData.start_date || null,
+            end_date: formData.end_date || null
+          }),
+        })
+
+        const projectData = await projectResponse.json()
+
+        if (!projectData.success) {
+          throw new Error(projectData.message || 'Failed to update project')
+        }
+
+        // Step 2: Delete all existing SLA assignments for this project
+        await fetch(`/api/project-sla?project_id=${editingProject.id}`, {
+          method: 'DELETE',
+        })
+
+        // Step 3: Create new SLA records and assign them
+        const slaIds: string[] = []
+        
+        for (const sla of validSLAs) {
+          const minutes = convertToMinutes(parseFloat(sla.value), sla.unit)
+          
+          // If SLA ID starts with 'existing-', it's an old SLA that was edited
+          // We'll create a new one for simplicity
+          const slaResponse = await fetch('/api/sla', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: sla.name,
+              resolve_time: minutes
+            }),
+          })
+
+          const slaData = await slaResponse.json()
+
+          if (!slaData.success) {
+            throw new Error(slaData.message || 'Failed to create SLA')
+          }
+
+          slaIds.push(slaData.data.id)
+        }
+
+        // Step 4: Assign new SLAs to project
+        const assignResponse = await fetch('/api/project-sla', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            name: sla.name,
-            resolve_time: minutes
+            project_id: editingProject.id,
+            sla_ids: slaIds
           }),
         })
 
-        const slaData = await slaResponse.json()
+        const assignData = await assignResponse.json()
 
-        if (!slaData.success) {
-          throw new Error(slaData.message || 'Failed to create SLA')
+        if (!assignData.success) {
+          throw new Error(assignData.message || 'Failed to assign SLAs')
         }
 
-        slaIds.push(slaData.data.id)
-      }
+      } else {
+        // CREATE MODE: Create new project
+        
+        // Step 1: Create all SLA records
+        const slaIds: string[] = []
+        
+        for (const sla of validSLAs) {
+          const minutes = convertToMinutes(parseFloat(sla.value), sla.unit)
+          
+          const slaResponse = await fetch('/api/sla', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: sla.name,
+              resolve_time: minutes
+            }),
+          })
 
-      // Step 2: Create project (without sla_id since we're using junction table)
-      const token = localStorage.getItem('token')
-      const projectResponse = await fetch('/api/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          code: formData.code || null,
-          description: formData.description || null,
-          customer_id: formData.customer_id,
-          start_date: formData.start_date || null,
-          end_date: formData.end_date || null
-        }),
-      })
+          const slaData = await slaResponse.json()
 
-      const projectData = await projectResponse.json()
+          if (!slaData.success) {
+            throw new Error(slaData.message || 'Failed to create SLA')
+          }
 
-      if (!projectData.success) {
-        throw new Error(projectData.message || 'Failed to create project')
-      }
+          slaIds.push(slaData.data.id)
+        }
 
-      // Step 3: Assign SLAs to project via junction table
-      const assignResponse = await fetch('/api/project-sla', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          project_id: projectData.data.id,
-          sla_ids: slaIds
-        }),
-      })
+        // Step 2: Create project (without sla_id since we're using junction table)
+        const projectResponse = await fetch('/api/projects', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            code: formData.code || null,
+            description: formData.description || null,
+            customer_id: formData.customer_id,
+            start_date: formData.start_date || null,
+            end_date: formData.end_date || null
+          }),
+        })
 
-      const assignData = await assignResponse.json()
+        const projectData = await projectResponse.json()
 
-      if (!assignData.success) {
-        throw new Error(assignData.message || 'Failed to assign SLAs')
+        if (!projectData.success) {
+          throw new Error(projectData.message || 'Failed to create project')
+        }
+
+        // Step 3: Assign SLAs to project via junction table
+        const assignResponse = await fetch('/api/project-sla', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            project_id: projectData.data.id,
+            sla_ids: slaIds
+          }),
+        })
+
+        const assignData = await assignResponse.json()
+
+        if (!assignData.success) {
+          throw new Error(assignData.message || 'Failed to assign SLAs')
+        }
       }
 
       // Reset form
@@ -195,7 +318,7 @@ export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModal
       setSlaInputs([{ id: '1', name: '', value: '', unit: 'hours' }])
       onClose()
       
-      // Refresh the page to show new project
+      // Refresh the page to show updated project
       window.location.reload()
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
@@ -218,7 +341,9 @@ export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModal
       <div className="relative bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-gray-900">Create New Project</h3>
+          <h3 className="text-xl font-semibold text-gray-900">
+            {editingProject ? 'Edit Project' : 'Create New Project'}
+          </h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -448,7 +573,7 @@ export default function ProjectModal({ isOpen, onClose, onSubmit }: ProjectModal
                 onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = '#5558E3')}
                 onMouseLeave={(e) => !loading && (e.currentTarget.style.backgroundColor = '#6366F1')}
               >
-                {loading ? 'Creating...' : 'Create Project'}
+                {loading ? (editingProject ? 'Updating...' : 'Creating...') : (editingProject ? 'Update Project' : 'Create Project')}
               </button>
             </div>
           </form>

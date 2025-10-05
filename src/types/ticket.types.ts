@@ -13,6 +13,7 @@ export interface Ticket {
   created_date: Date;
   updated_by?: string | null;
   updated_date: Date;
+  deleted_date?: Date | null;
 
   status_name?: string;
   sla_name?: string;

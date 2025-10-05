@@ -30,7 +30,7 @@ export class TicketModel {
        LEFT JOIN "user" u_creator ON t.created_by = u_creator.id
        LEFT JOIN project proj ON t.project_id = proj.id
        LEFT JOIN customer c ON proj.customer_id = c.id
-       WHERE t.id = $1`,
+       WHERE t.id = $1 AND t.deleted_date IS NULL`,
       [id]
     )
     return result.rows[0] || null
@@ -62,7 +62,7 @@ export class TicketModel {
        LEFT JOIN "user" u_creator ON t.created_by = u_creator.id
        LEFT JOIN project proj ON t.project_id = proj.id
        LEFT JOIN customer c ON proj.customer_id = c.id
-       WHERE t.project_id = $1
+       WHERE t.project_id = $1 AND t.deleted_date IS NULL
        ORDER BY t.number ASC`,
       [project_id]
     )
@@ -95,6 +95,7 @@ export class TicketModel {
       LEFT JOIN "user" u_creator ON t.created_by = u_creator.id
       LEFT JOIN project proj ON t.project_id = proj.id
       LEFT JOIN customer c ON proj.customer_id = c.id
+      WHERE t.deleted_date IS NULL
       ORDER BY t.created_date DESC
     `)
     return result.rows
@@ -111,7 +112,8 @@ export class TicketModel {
        JOIN project p2 ON p2.id = $1
        WHERE p.customer_id = p2.customer_id
        AND EXTRACT(YEAR FROM t.created_date) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
-       AND EXTRACT(MONTH FROM t.created_date) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)`,
+       AND EXTRACT(MONTH FROM t.created_date) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
+       AND t.deleted_date IS NULL`,
       [data.project_id]
     )
     
@@ -183,9 +185,12 @@ export class TicketModel {
     return result.rows[0] || null
   }
 
-  /* Delete ticket */
+  /* Delete ticket (Soft Delete) */
   static async delete(id: string): Promise<boolean> {
-    const result = await query('DELETE FROM ticket WHERE id = $1', [id])
+    const result = await query(
+      'UPDATE ticket SET deleted_date = now() WHERE id = $1 AND deleted_date IS NULL',
+      [id]
+    )
     return (result.rowCount || 0) > 0
   }
 }

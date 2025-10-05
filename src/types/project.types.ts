@@ -13,6 +13,7 @@ export interface Project {
   updated_date: Date;
   created_by?: string | null;
   updated_by?: string | null;
+  deleted_date?: Date | null;
 }
 
 export interface ProjectWithRelations extends Project {

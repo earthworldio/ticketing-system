@@ -56,5 +56,18 @@ export class ProjectSLAController {
       }
     }
   }
+
+  /* Remove all SLAs from project */
+  static async removeAllSLAs(project_id: string): Promise<ApiResponse> {
+    try {
+      await ProjectSLAService.removeAllSLAsFromProject(project_id)
+      return { success: true, message: 'All SLAs removed successfully' }
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Failed to remove SLAs',
+      }
+    }
+  }
 }
 

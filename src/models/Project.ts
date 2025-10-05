@@ -13,7 +13,7 @@ export class ProjectModel {
         c.code as customer_code
        FROM project p
        LEFT JOIN customer c ON p.customer_id = c.id
-       WHERE p.id = $1`,
+       WHERE p.id = $1 AND p.deleted_date IS NULL`,
       [id]
     )
     return result.rows[0] || null
@@ -28,6 +28,7 @@ export class ProjectModel {
         c.code as customer_code
       FROM project p
       LEFT JOIN customer c ON p.customer_id = c.id
+      WHERE p.deleted_date IS NULL
       ORDER BY p.created_date DESC
     `)
     return result.rows
@@ -106,9 +107,12 @@ export class ProjectModel {
     return result.rows[0] || null
   }
 
-  /* Delete project */
+  /* Delete project (Soft Delete) */
   static async delete(id: string): Promise<boolean> {
-    const result = await query('DELETE FROM project WHERE id = $1', [id])
+    const result = await query(
+      'UPDATE project SET deleted_date = now() WHERE id = $1 AND deleted_date IS NULL',
+      [id]
+    )
     return (result.rowCount || 0) > 0
   }
 }
