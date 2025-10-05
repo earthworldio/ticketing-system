@@ -91,11 +91,14 @@ export default function TicketDetailPage({ params }: PageProps) {
 
     setAssignLoading(true)
     try {
+      const token = localStorage.getItem('token')
       const userData = JSON.parse(localStorage.getItem('user') || '{}')
+      
       const response = await fetch(`/api/tickets/${resolvedParams.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           owner: selectedOwner,
@@ -117,11 +120,14 @@ export default function TicketDetailPage({ params }: PageProps) {
 
   const handleUpdateDescription = async () => {
     try {
+      const token = localStorage.getItem('token')
       const userData = JSON.parse(localStorage.getItem('user') || '{}')
+      
       const response = await fetch(`/api/tickets/${resolvedParams.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           description: editedDescription,

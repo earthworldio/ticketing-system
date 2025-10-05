@@ -172,11 +172,14 @@ export default function ProjectDetailPage() {
     if (!selectedTicketForStatus || !newStatusId) return
 
     try {
+      const token = localStorage.getItem('token')
       const userData = JSON.parse(localStorage.getItem('user') || '{}')
+      
       const response = await fetch(`/api/tickets/${selectedTicketForStatus.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           status_id: newStatusId,
