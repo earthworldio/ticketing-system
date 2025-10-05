@@ -6,10 +6,10 @@ import { UserModel } from '@/models/User'
 /* GET /api/users/[id] - Get user by ID */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const user = await UserModel.findById(id)
 
     if (!user) {
@@ -19,7 +19,7 @@ export async function GET(
       )
     }
 
-    // Return only safe fields (no password)
+
     const { password, ...safeUser } = user
 
     return NextResponse.json(
