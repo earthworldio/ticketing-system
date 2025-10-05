@@ -46,10 +46,6 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md p-8">
 
-        <div className='absolute top-10 left-1/2 -translate-x-1/2' >
-          <h2 className='text-xl md:text-xl font-sm text-gray-800'>Ticketing System by Fourpoint Zero</h2>
-        </div>
-
         {/* Welcome Message */}
         <div className="text-center mb-8">
           <h2 className="text-xl md:text-2xl font-medium text-gray-800">Welcome back!</h2>
@@ -81,7 +77,8 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border text-gray-700 border-gray-300 rounded-lg focus:outline-none 
+              focus:ring-2 focus:ring-[#6366F1]"
             />
           </div>
 
@@ -99,7 +96,8 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border text-gray-700 border-gray-300 rounded-lg focus:outline-none 
+              focus:ring-2 focus:ring-[#6366F1]"
             />
           </div>
 
