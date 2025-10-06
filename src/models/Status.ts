@@ -30,7 +30,7 @@ export class StatusModel {
     if (!data.name) return null
 
     const result = await query(
-      `UPDATE status SET name = $1, updated_date = now() WHERE id = $2 RETURNING *`,
+      `UPDATE status SET name = $1 WHERE id = $2 RETURNING *`,
       [data.name, id]
     )
     return result.rows[0] || null
