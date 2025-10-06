@@ -202,17 +202,16 @@ CROSS JOIN permission p
 WHERE r.name = 'Admin'
 ON CONFLICT (role_id, permission_id) DO NOTHING;
 
--- Default Admin User (password: admin123)
--- Hash generated using bcrypt with salt rounds 10
+
 INSERT INTO "user" (role_id, email, password, title_name, first_name, last_name, phone, is_active)
 SELECT 
   r.id,
-  'admin@example.com',
-  '$2a$10$X8JqEKv0rLYJHl1h2XQKEO7GZl0w5zV4hY.KZcGvUdJvJ4YEYfWPa', -- admin123
+  'admin@40.co.th',
+  '$2a$12$bE02xFeUjkRtdNc0TQJUqOJyWrg0iu1gUdtNPZJI6CEiar7WjYIYm', 
   'นาย',
   'Admin',
   'System',
-  '0812345678',
+  '0987654321',
   true
 FROM role r
 WHERE r.name = 'Admin'
