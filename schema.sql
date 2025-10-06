@@ -27,10 +27,9 @@ CREATE TABLE IF NOT EXISTS "user" (
   password VARCHAR(255) NOT NULL,
   title_name VARCHAR(50),
   first_name VARCHAR(100) NOT NULL,
-  last_name VARCHAR(100) NOT NULL,
-  image_url VARCHAR(500),
+  last_name VARCHAR(100) NOT NULL
   phone VARCHAR(20),
-  activate BOOLEAN DEFAULT true,
+  is_active BOOLEAN DEFAULT true,
   created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -85,7 +84,8 @@ CREATE TABLE IF NOT EXISTS project (
   updated_by UUID REFERENCES "user"(id) ON DELETE SET NULL,
   deleted_date TIMESTAMP,
   created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  is_closed BOOLEAN DEFAULT false
 );
 
 -- ========================================
@@ -107,6 +107,7 @@ CREATE TABLE IF NOT EXISTS project_sla (
   project_id UUID NOT NULL REFERENCES project(id) ON DELETE CASCADE,
   sla_id UUID NOT NULL REFERENCES sla(id) ON DELETE CASCADE,
   created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(project_id, sla_id)
 );
 
@@ -173,28 +174,24 @@ CREATE INDEX IF NOT EXISTS idx_project_sla_project_id ON project_sla(project_id)
 
 -- Default Roles
 INSERT INTO role (name, description) VALUES
-  ('Admin', 'ผู้ดูแลระบบมีสิทธิ์เต็ม'),
-  ('Manager', 'ผู้จัดการโครงการ'),
-  ('Staff', 'พนักงานทั่วไป'),
-  ('Customer', 'ลูกค้า')
+  ('Admin', 'ผู้ดูแลระบบมีสิทธิ์เต็ม')
 ON CONFLICT (name) DO NOTHING;
 
 -- Default Permissions
 INSERT INTO permission (name, description) VALUES
-  ('user:read', 'ดูข้อมูลผู้ใช้'),
-  ('user:create', 'สร้างผู้ใช้ใหม่'),
-  ('user:update', 'แก้ไขข้อมูลผู้ใช้'),
-  ('user:delete', 'ลบผู้ใช้'),
-  ('project:read', 'ดูข้อมูลโครงการ'),
-  ('project:create', 'สร้างโครงการใหม่'),
-  ('project:update', 'แก้ไขข้อมูลโครงการ'),
-  ('project:delete', 'ลบโครงการ'),
-  ('ticket:read', 'ดูข้อมูล Ticket'),
-  ('ticket:create', 'สร้าง Ticket ใหม่'),
-  ('ticket:update', 'แก้ไข Ticket'),
-  ('ticket:delete', 'ลบ Ticket'),
-  ('settings:read', 'ดูการตั้งค่า'),
-  ('settings:update', 'แก้ไขการตั้งค่า')
+  ('user-read', 'ดูข้อมูลผู้ใช้'),
+  ('user-create', 'สร้างผู้ใช้ใหม่'),
+  ('user-update', 'แก้ไขข้อมูลผู้ใช้'),
+  ('user-delete', 'ลบผู้ใช้'),
+  ('project-read', 'ดูข้อมูลโครงการ'),
+  ('project-create', 'สร้างโครงการใหม่'),
+  ('project-update', 'แก้ไขข้อมูลโครงการ'),
+  ('project-delete', 'ลบโครงการ'),
+  ('ticket-read', 'ดูข้อมูล Ticket'),
+  ('ticket-create', 'สร้าง Ticket ใหม่'),
+  ('ticket-update', 'แก้ไข Ticket'),
+  ('ticket-delete', 'ลบ Ticket'),
+  ('settings', 'ดูการตั้งค่า')
 ON CONFLICT (name) DO NOTHING;
 
 -- Assign all permissions to Admin role
@@ -242,7 +239,7 @@ ON CONFLICT DO NOTHING;
 
 -- Default Customer
 INSERT INTO customer (name, code) VALUES
-  ('Default Customer', 'DEF')
+  ('ออมสิน', 'GSB')
 ON CONFLICT (code) DO NOTHING;
 
 -- ========================================
