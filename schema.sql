@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS "user" (
   password VARCHAR(255) NOT NULL,
   title_name VARCHAR(50),
   first_name VARCHAR(100) NOT NULL,
-  last_name VARCHAR(100) NOT NULL
+  last_name VARCHAR(100) NOT NULL,
   phone VARCHAR(20),
   is_active BOOLEAN DEFAULT true,
   created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
