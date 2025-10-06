@@ -204,7 +204,7 @@ ON CONFLICT (role_id, permission_id) DO NOTHING;
 
 -- Default Admin User (password: admin123)
 -- Hash generated using bcrypt with salt rounds 10
-INSERT INTO "user" (role_id, email, password, title_name, first_name, last_name, phone, activate)
+INSERT INTO "user" (role_id, email, password, title_name, first_name, last_name, phone, is_active)
 SELECT 
   r.id,
   'admin@example.com',
