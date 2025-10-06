@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# docker
+docker-compose.override.yml
+*.tar.gz
+
+# database backups
+*.sql.backup
+backup_*.sql
+
+# uploads (optional - remove if you want to track uploads)
+/public/uploads/*
+!/public/uploads/.gitkeep

@@ -10,7 +10,7 @@ const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
-// Check if we should run the initialization
+
 const shouldInitialize = process.env.DATABASE_URL || process.env.DB_HOST;
 
 if (!shouldInitialize) {
@@ -18,7 +18,7 @@ if (!shouldInitialize) {
   process.exit(0);
 }
 
-// Database connection configuration
+
 const getDatabaseConfig = () => {
   if (process.env.DATABASE_URL) {
     return {
@@ -40,11 +40,10 @@ async function initializeDatabase() {
   const pool = new Pool(getDatabaseConfig());
   
   try {
-    console.log('🔄 Connecting to database...');
     await pool.query('SELECT NOW()');
     console.log('✅ Connected to database successfully');
     
-    // Check if tables already exist
+
     const tablesExist = await pool.query(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
@@ -61,7 +60,6 @@ async function initializeDatabase() {
     
     console.log('📋 Database is empty - running schema initialization...');
     
-    // Read and execute schema.sql
     const schemaPath = path.join(__dirname, '..', 'schema.sql');
     
     if (!fs.existsSync(schemaPath)) {
@@ -72,21 +70,12 @@ async function initializeDatabase() {
     
     const schemaSql = fs.readFileSync(schemaPath, 'utf8');
     
-    console.log('🔄 Executing schema.sql...');
     await pool.query(schemaSql);
     
-    console.log('✅ Database schema created successfully!');
-    console.log('');
-    console.log('📝 Default credentials:');
-    console.log('   Email: admin@example.com');
-    console.log('   Password: admin123');
-    console.log('   ⚠️  Please change this password immediately after first login!');
-    console.log('');
     
   } catch (error) {
     console.error('❌ Error initializing database:', error.message);
     
-    // Don't fail the build on Railway if DB is not ready yet
     if (process.env.RAILWAY_ENVIRONMENT) {
       console.log('⚠️  Running on Railway - database may not be ready yet');
       console.log('   You can manually run the schema later using Railway\'s psql command');
@@ -99,7 +88,6 @@ async function initializeDatabase() {
   }
 }
 
-// Only run if called directly
 if (require.main === module) {
   initializeDatabase()
     .then(() => {
