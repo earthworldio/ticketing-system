@@ -39,18 +39,32 @@ if [ ! -f "docker-compose.yml" ]; then
     exit 1
 fi
 
-# Warning about default credentials
-echo -e "${YELLOW}⚠️  WARNING: Using default configuration${NC}"
-echo "Please review and update the following in docker-compose.yml:"
-echo "  - POSTGRES_PASSWORD"
-echo "  - JWT_SECRET"
-echo "  - NEXT_PUBLIC_API_URL"
+# Check if .env file exists
+if [ ! -f ".env" ]; then
+    echo -e "${RED}❌ .env file not found!${NC}"
+    echo ""
+    echo "Please create .env file first:"
+    echo "  1. cp env.example .env"
+    echo "  2. Edit .env and update:"
+    echo "     - POSTGRES_PASSWORD"
+    echo "     - DB_PASSWORD"
+    echo "     - JWT_SECRET"
+    echo "     - NEXT_PUBLIC_API_URL"
+    echo ""
+    exit 1
+fi
+
+# Warning about configuration
+echo -e "${YELLOW}⚠️  Make sure you have updated .env file with:${NC}"
+echo "  - Strong POSTGRES_PASSWORD and DB_PASSWORD (same value)"
+echo "  - Secure JWT_SECRET (at least 32 characters)"
+echo "  - Correct NEXT_PUBLIC_API_URL (VM IP or domain)"
 echo ""
-read -p "Have you updated the configuration? (y/N) " -n 1 -r
+read -p "Continue? (y/N) " -n 1 -r
 echo ""
 
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo -e "${YELLOW}Please update docker-compose.yml before continuing${NC}"
+    echo -e "${YELLOW}Please update .env file before continuing${NC}"
     exit 0
 fi
 
